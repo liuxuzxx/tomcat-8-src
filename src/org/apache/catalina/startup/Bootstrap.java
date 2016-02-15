@@ -47,6 +47,13 @@ import org.apache.juli.logging.LogFactory;
  * @author Craig R. McClanahan
  * @author Remy Maucherat
  */
+/**
+ * 我们就从这个最基本的风格看起来，这个程序就没有一个警告，这个是牛逼的程序牛逼的地方，人家一个警告都不给你出现
+ * 这样子，我们的程序的健壮性从一个没有warning就能体现出来了，但是虽然说没用warning不能说明多么大的问题，我们
+ * 还是说不要让我们的程序出现一个warning，就像是误差一样子，我们尽可能的减少吧！
+ * @author liuxu
+ *
+ */
 public final class Bootstrap {
 
     private static final Log log = LogFactory.getLog(Bootstrap.class);
@@ -286,6 +293,10 @@ public final class Bootstrap {
 
     /**
      * Load daemon.
+     * daemon:在英语中的意思是：“守护神，半人半兽的精灵，”但是在计算机中，这个是守护进程的意思
+     *        就是说，这个进程是一个持续运行的进程，估计这个java应该是能让一个进程成为一个守护进程的
+     *        但是这个词语让我想起来了：demo，这个英语单词的意思应该是例子的意思，因为是，大家都喜欢说，给我
+     *        一个demo，不过，我还是需要上网查询这个单词的意思：演示，样例
      */
     private void load(String[] arguments)
         throws Exception {
