@@ -1038,7 +1038,7 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
 
             // Loop until we receive a shutdown command
             while (running) {
-
+                System.out.println(this.getClass().getName()+"接受了一个TCP请求，开始运行引擎处理请求");
                 // Loop if endpoint is paused
                 while (paused && running) {
                     state = AcceptorState.PAUSED;
