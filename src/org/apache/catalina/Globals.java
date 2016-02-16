@@ -23,8 +23,26 @@ import org.apache.tomcat.util.compat.JreVendor;
  *
  * @author Craig R. McClanahan
  */
+/**
+ * 这个是定义这个常量的final的类，但是为什么不适用这个接口进行一个常量的定义
+ * 我记得，我就是从这个tomcat的源代码之中学习的使用这个interface进行一个常量的定义的
+ * 但是，从接口的原始的定义，我们似乎知道，这个interface就是一个提供给外界的一个操作单元
+ * 就像是这个银行的窗口一样子，每一个窗口就是一个功能点
+ * 所以，我们以后定义常量的时候还是在这个final类中定义吧，还是不要使用接口了
+ * 
+ * 看这个定义的特点啊：final：首先是这个不是能被谁继承的类
+ *                 Globals：名字，我们写代码的时候经常需要使用一个全局的常量进行一个使用
+ *                 			但是这个名字，我是想破了头就是先不起来起什么名字啊，看来程序员首先是一个
+ *                 			起名字的高手啊，这个名字真的是很重要啊，
+ *                 			所以，我以后一个孩子了，我一定给他起一个名字，很好听和有意义的名字        
+ * @author liuxu
+ *
+ */
 public final class Globals {
 
+	/**
+	 * 具体的定义这个常量方式：名字一定是大写的英语字母，单词之间使用下划线进行一个链接操作 
+	 */
     /**
      * The servlet context attribute under which we store the alternate
      * deployment descriptor for this web application
@@ -46,6 +64,10 @@ public final class Globals {
      * The request attribute under which we store the name of the cipher suite
      * being used on an SSL connection (as an object of type
      * java.lang.String).
+     */
+    /**
+     * 这个java程序员是不是从c++过渡过来的，要不然，怎么会有单词小写，并且是下划线的，这个是c++或者是c
+     * 程序员才会使用的命名风格
      */
     public static final String CIPHER_SUITE_ATTR =
         "javax.servlet.request.cipher_suite";
