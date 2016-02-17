@@ -180,6 +180,10 @@ public final class Bootstrap {
 			sharedLoader = createClassLoader("shared", commonLoader);
 		} catch (Throwable t) {
 			handleThrowable(t);
+			/**
+			 * 你看这个tomcat如果逮到这个非常厉害的异常，还是需要进行一个停止服务的，毕竟这个异常 已经不是异常了，这个就是异常和错误的区别
+			 * 就像是犯法和犯罪的区别一样子
+			 */
 			log.error("Class loader creation threw exception", t);
 			System.exit(1);
 		}

@@ -19,7 +19,6 @@ package org.apache.coyote;
 
 import java.util.concurrent.Executor;
 
-
 /**
  * Abstract the protocol implementation, including threading, etc.
  * Processor is single threaded and specific to stream-based protocols,
@@ -33,77 +32,73 @@ import java.util.concurrent.Executor;
  * @author Costin Manolache
  * @see Adapter
  */
+/**
+ * 我们的tomcat的使用的connector就是从这个接口中实现的，但是从这个接口的方法看，好像就是 启动，停止，暂停，复苏和获取适配器的意思
+ * 
+ * @author liuxu
+ *
+ */
 public interface ProtocolHandler {
 
-    /**
-     * The adapter, used to call the connector.
-     */
-    public void setAdapter(Adapter adapter);
-    public Adapter getAdapter();
+	/**
+	 * The adapter, used to call the connector.
+	 */
+	public void setAdapter(Adapter adapter);
 
+	public Adapter getAdapter();
 
-    /**
-     * The executor, provide access to the underlying thread pool.
-     */
-    public Executor getExecutor();
+	/**
+	 * The executor, provide access to the underlying thread pool.
+	 */
+	public Executor getExecutor();
 
+	/**
+	 * Initialise the protocol.
+	 */
+	public void init() throws Exception;
 
-    /**
-     * Initialise the protocol.
-     */
-    public void init() throws Exception;
+	/**
+	 * Start the protocol.
+	 */
+	public void start() throws Exception;
 
+	/**
+	 * Pause the protocol (optional).
+	 */
+	public void pause() throws Exception;
 
-    /**
-     * Start the protocol.
-     */
-    public void start() throws Exception;
+	/**
+	 * Resume the protocol (optional).
+	 */
+	public void resume() throws Exception;
 
+	/**
+	 * Stop the protocol.
+	 */
+	public void stop() throws Exception;
 
-    /**
-     * Pause the protocol (optional).
-     */
-    public void pause() throws Exception;
+	/**
+	 * Destroy the protocol (optional).
+	 */
+	public void destroy() throws Exception;
 
+	/**
+	 * Requires APR/native library
+	 */
+	public boolean isAprRequired();
 
-    /**
-     * Resume the protocol (optional).
-     */
-    public void resume() throws Exception;
+	/**
+	 * Does this ProtocolHandler support Comet?
+	 */
+	public boolean isCometSupported();
 
+	/**
+	 * Does this ProtocolHandler support Comet timeouts?
+	 */
+	public boolean isCometTimeoutSupported();
 
-    /**
-     * Stop the protocol.
-     */
-    public void stop() throws Exception;
-
-
-    /**
-     * Destroy the protocol (optional).
-     */
-    public void destroy() throws Exception;
-
-
-    /**
-     * Requires APR/native library
-     */
-    public boolean isAprRequired();
-
-
-    /**
-     * Does this ProtocolHandler support Comet?
-     */
-    public boolean isCometSupported();
-
-
-    /**
-     * Does this ProtocolHandler support Comet timeouts?
-     */
-    public boolean isCometTimeoutSupported();
-
-
-    /**
-     * Does this ProtocolHandler support sendfile?
-     */
-    public boolean isSendfileSupported();
+	/**
+	 * Does this ProtocolHandler support sendfile?
+	 */
+	public boolean isSendfileSupported();
 }

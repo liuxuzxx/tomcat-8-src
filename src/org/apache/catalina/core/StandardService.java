@@ -48,6 +48,12 @@ import org.apache.tomcat.util.res.StringManager;
  * @author Craig R. McClanahan
  */
 
+/**
+ * 这个是tomcat的serve.xml的文件定义的额server顶层元素下面的第一个元素，记住是service不是server
+ * 这个单词是名词的东西，不是东西，顶层的单词才是这个动词的意思，注意啊
+ * @author liuxu
+ *
+ */
 public class StandardService extends LifecycleMBeanBase implements Service {
 
     private static final Log log = LogFactory.getLog(StandardService.class);
