@@ -309,10 +309,10 @@ public class JDTCompiler extends org.apache.jasper.compiler.Compiler {
             } else if(opt.equals("1.7")) {
                 settings.put(CompilerOptions.OPTION_Source,
                              CompilerOptions.VERSION_1_7);
-            } /*else if(opt.equals("1.8")) {
+            } else if(opt.equals("1.8")) {
                 settings.put(CompilerOptions.OPTION_Source,
                              CompilerOptions.VERSION_1_8);
-            } */else {
+            } else {
                 log.warn("Unknown source VM " + opt + " ignored.");
                 settings.put(CompilerOptions.OPTION_Source,
                         CompilerOptions.VERSION_1_7);
@@ -358,12 +358,12 @@ public class JDTCompiler extends org.apache.jasper.compiler.Compiler {
              * 原因是这个eclipse的jdt的jar包并没有设置这个jdk1.8，所以导致这个导入的出现错误提示
              * 但是，我们可以进行一个注释掉这个，但是，我的电脑是1.8的，所以，这个是不是导致错误，就看运行的时候了
              */
-            /*else if(opt.equals("1.8")) {
+            else if(opt.equals("1.8")) {
                 settings.put(CompilerOptions.OPTION_TargetPlatform,
                              CompilerOptions.VERSION_1_8);
                 settings.put(CompilerOptions.OPTION_Compliance,
                         CompilerOptions.VERSION_1_8);
-            } */else {
+            } else {
                 log.warn("Unknown target VM " + opt + " ignored.");
                 settings.put(CompilerOptions.OPTION_TargetPlatform,
                         CompilerOptions.VERSION_1_7);

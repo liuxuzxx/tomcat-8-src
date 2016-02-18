@@ -66,6 +66,7 @@ public class Http11Protocol extends AbstractHttp11JsseProtocol<Socket> {
         setSoLinger(Constants.DEFAULT_CONNECTION_LINGER);
         setSoTimeout(Constants.DEFAULT_CONNECTION_TIMEOUT);
         setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
+        System.out.println(this.getClass().getName()+"这个链接有没有被启动");
     }
 
 

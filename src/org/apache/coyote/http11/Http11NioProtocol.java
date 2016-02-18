@@ -47,6 +47,10 @@ public class Http11NioProtocol extends AbstractHttp11JsseProtocol<NioChannel> {
 
 	private static final Log log = LogFactory.getLog(Http11NioProtocol.class);
 
+	/**
+	 * 第一次见到这个log是一个protected的方式方法，这个方式，只能是继承的子类才能访问操作，
+	 * 其实也是对的，毕竟这个是需要记录父类的log日志信息
+	 */
 	@Override
 	protected Log getLog() {
 		return log;
