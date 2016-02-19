@@ -17,6 +17,7 @@
 package org.apache.catalina.core;
 
 import java.util.Arrays;
+import java.util.Date;
 
 import org.apache.catalina.AccessLog;
 import org.apache.catalina.connector.Request;
@@ -50,6 +51,7 @@ public class AccessLogAdapter implements AccessLog {
         for (AccessLog log: logs) {
             log.log(request, response, time);
         }
+        System.out.println(this.getClass().getName()+"输出日志，当访问的时候"+new Date());
     }
 
     @Override

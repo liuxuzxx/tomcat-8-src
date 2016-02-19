@@ -36,7 +36,11 @@ import org.apache.jasper.JasperException;
  *
  * @author Kin-man Chung
  */
-
+/**
+ * 这个是对应jsp页面的数据对象类，从java的角度来看，这个是充血类，不像其他的工具类
+ * @author liuxu
+ *
+ */
 class PageInfo {
 
     private final Vector<String> imports;
