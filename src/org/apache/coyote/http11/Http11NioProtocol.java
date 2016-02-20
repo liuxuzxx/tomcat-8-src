@@ -61,6 +61,9 @@ public class Http11NioProtocol extends AbstractHttp11JsseProtocol<NioChannel> {
 		return cHandler;
 	}
 
+	/**
+	 * tomcat开始启动的时候，需要装配一个协议进行一个组建工作，这个httpprotocol协议就是一个组件
+	 */
 	public Http11NioProtocol() {
 		endpoint = new NioEndpoint();
 		cHandler = new Http11ConnectionHandler(this);
@@ -68,7 +71,7 @@ public class Http11NioProtocol extends AbstractHttp11JsseProtocol<NioChannel> {
 		setSoLinger(Constants.DEFAULT_CONNECTION_LINGER);
 		setSoTimeout(Constants.DEFAULT_CONNECTION_TIMEOUT);
 		setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
-		System.out.println(this.getClass().getName() + "Http开始接受这个前段的访问信息");
+		System.out.println(this.getClass().getName() + "tomcat启动的时候装配这个组件，这个组件是protocol");
 	}
 
 	public NioEndpoint getEndpoint() {
@@ -250,8 +253,15 @@ public class Http11NioProtocol extends AbstractHttp11JsseProtocol<NioChannel> {
 			}
 		}
 
+		/**
+		 * 我们首先需要明白两个单词的意思：protocol：协议，processor：加工机，加工，数据处理的意思
+		 * 当我们第一次访问的时候，就是首先是从这个地方开始的， 我的策略就是一种笨蛋方法，就是一步一步的进行一条调试性质的工作
+		 * 
+		 * @return
+		 */
 		@Override
 		public Http11NioProcessor createProcessor() {
+			System.out.println(this.getClass().getName() + "当第一次访问的时候，产生一个processor出来");
 			Http11NioProcessor processor = new Http11NioProcessor(proto.getMaxHttpHeaderSize(),
 					(NioEndpoint) proto.endpoint, proto.getMaxTrailerSize(), proto.getAllowedTrailerHeadersAsSet(),
 					proto.getMaxExtensionSize(), proto.getMaxSwallowSize());

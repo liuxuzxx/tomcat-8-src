@@ -590,6 +590,12 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
         }
 
 
+        /**
+         * 这一块应该是对这个socket的封装吧
+         * @param wrapper
+         * @param status
+         * @return
+         */
         public SocketState process(SocketWrapper<S> wrapper,
                 SocketStatus status) {
             if (wrapper == null) {
