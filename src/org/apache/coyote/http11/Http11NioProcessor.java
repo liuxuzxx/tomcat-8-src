@@ -61,6 +61,10 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 
 	// ----------------------------------------------------------- Constructors
 
+	/**
+	 * Secure Sockets Layer 安全套接层:其实tomcat支持很多种类的协议类型，通过过这些个协议类型
+	 * 我们可以很好的处理这个通信的问题 这些个编写java代码的人对底层的理解真是让人叹为观止啊
+	 */
 	public Http11NioProcessor(int maxHttpHeaderSize, NioEndpoint endpoint, int maxTrailerSize,
 			Set<String> allowedTrailerHeaders, int maxExtensionSize, int maxSwallowSize) {
 

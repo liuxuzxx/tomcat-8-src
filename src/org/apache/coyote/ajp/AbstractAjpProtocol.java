@@ -24,6 +24,20 @@ import org.apache.coyote.UpgradeToken;
 import org.apache.tomcat.util.net.SocketWrapper;
 import org.apache.tomcat.util.res.StringManager;
 
+/**
+ * 无论是看tomcat的源代码还是这个spring的源代码，还是这个mybatis的源代码，给我印象最深刻的一个就是
+ * 他们总是设计出来很多的接口，然后是，让不同的Abstract的class实现这些个接口，但是还是弄成一个抽象类
+ * 目的可能，就是为了扩大这个功能
+ * 毕竟，下面的很多实现都是有很多的共同方法的
+ * 我们也要尝试使用这个抽象类，其实我们从一个更加高的角度看待问题就是：一切都是为了不重复，尽可能的少重复
+ * 在同一个类中，重复的代码提取到一个方法中，在多个类中，重复的代码提取到一个抽象类中，但是接口不是解决重复方法的方案
+ * 接口就是声明功能的，没有任何的其他作用了
+ * 也就是说：所有的设计模式和编程思想都是扯淡，他们的唯一目的就是为了让我们的代码尽可能少的重复和不要写出来很男修改的代码
+ * 罢了，就是这么的思想简单
+ * @author liuxu
+ *
+ * @param <S>
+ */
 public abstract class AbstractAjpProtocol<S> extends AbstractProtocol<S> {
 
     /**

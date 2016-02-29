@@ -33,6 +33,7 @@ import org.apache.catalina.startup.ClassLoaderFactory.Repository;
 import org.apache.catalina.startup.ClassLoaderFactory.RepositoryType;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
+import org.lx.tomcat.util.SystemUtil;
 
 /**
  * Bootstrap loader for Catalina.  This application constructs a class loader
@@ -447,7 +448,7 @@ public final class Bootstrap {
 	 *            Command line arguments to be processed
 	 */
 	public static void main(String args[]) {
-		System.out.println("tomcat开始启动了，就是从这个");
+		SystemUtil.printInfo(Bootstrap.class, "tomcat从这个地方开始启动了");
 		if (daemon == null) {
 			// Don't set daemon until init() has completed
 			Bootstrap bootstrap = new Bootstrap();

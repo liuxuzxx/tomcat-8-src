@@ -37,7 +37,9 @@ import java.util.concurrent.Executor;
  * 其实，我们在读取源代码的时候，不一定说，一下就把这个设计模式和这个很深的东西就给学习了，
  * 其实学习人家的命名、编码习惯、做法，我觉得是一种即战力，而且是很好学习的一种方式
  * @author liuxu
- *
+ *Handler:处理者，管理者; （动物） 驯化者; [自] （信息） 处理机; 拳击教练
+ *以前，Handler，我总是认为是手柄的意思，但是从这个延伸的意思看，理解成手柄也是正确的，毕竟，只有抓住手柄，你才能
+ *更加的省力
  */
 public interface ProtocolHandler {
 
@@ -54,7 +56,12 @@ public interface ProtocolHandler {
 	public Executor getExecutor();
 
 	/**
+	 * 下面都是对这个协议的操作，比如说：stop、start、destory、init、pause、resume了
+	 */
+	/**
 	 * Initialise the protocol.
+	 * 我写接口的时候，从来没有一个方法抛出去异常，这个算是我学习到的第一个地方，学习了，
+	 * 其实，我们的很多方案都是在需求出来以后确定的，所以，一定要设计好需求
 	 */
 	public void init() throws Exception;
 
