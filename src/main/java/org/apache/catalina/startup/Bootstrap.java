@@ -69,13 +69,15 @@ public final class Bootstrap {
 
 	private static final Pattern PATH_PATTERN = Pattern.compile("(\".*?\")|(([^,])*)");
 
+	private static final String TOMCAT_DIR = "/home/user/project/tomcat-8-src";
+
 	static {
 		// Will always be non-null
 		/**
 		 * 这个获取的是这个classpath路径，就是本java工程的classpath路径
 		 */
 
-		System.setProperty("user.dir","/home/liuxu/workspace/tomcat-8-src");
+		System.setProperty("user.dir",TOMCAT_DIR);
 		String userDir = System.getProperty("user.dir");
 
 		SystemUtil.logInfo(Bootstrap.class.getClass(),userDir);
