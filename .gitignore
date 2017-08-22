@@ -1,0 +1,10 @@
+#忽略提交target/文件夹
+target/
+
+*.class
+
+*.log
+
+*.properties
+
+*.iml
