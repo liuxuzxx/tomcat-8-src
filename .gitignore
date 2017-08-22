@@ -1,8 +1,10 @@
-target/
+target/*
 
-.idea/
+.idea/*
 
-.settings/
+.settings/*
+
+logs/*
 
 *.class
 
