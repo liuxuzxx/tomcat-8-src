@@ -1,5 +1,8 @@
-#忽略提交target/文件夹
 target/
+
+.idea/
+
+.settings/
 
 *.class
 
