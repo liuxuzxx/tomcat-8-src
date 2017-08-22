@@ -64,6 +64,7 @@ public class LimitLatch {
 
     /**
      * Instantiates a LimitLatch object with an initial limit.
+     *
      * @param limit - maximum number of concurrent acquisitions of this latch
      */
     public LimitLatch(long limit) {
@@ -74,6 +75,7 @@ public class LimitLatch {
 
     /**
      * Returns the current count for the latch
+     *
      * @return the current count for latch
      */
     public long getCount() {
@@ -110,21 +112,22 @@ public class LimitLatch {
      */
     public void countUpOrAwait() throws InterruptedException {
         if (log.isDebugEnabled()) {
-            log.debug("Counting up["+Thread.currentThread().getName()+"] latch="+getCount());
+            log.debug("Counting up[" + Thread.currentThread().getName() + "] latch=" + getCount());
         }
         sync.acquireSharedInterruptibly(1);
     }
 
     /**
      * Releases a shared latch, making it available for another thread to use.
+     *
      * @return the previous counter value
      */
     public long countDown() {
         sync.releaseShared(0);
         long result = getCount();
         if (log.isDebugEnabled()) {
-            log.debug("Counting down["+Thread.currentThread().getName()+"] latch="+result);
-    }
+            log.debug("Counting down[" + Thread.currentThread().getName() + "] latch=" + result);
+        }
         return result;
     }
 
@@ -139,6 +142,7 @@ public class LimitLatch {
 
     /**
      * Resets the latch and initializes the shared acquisition counter to zero.
+     *
      * @see #releaseAll()
      */
     public void reset() {

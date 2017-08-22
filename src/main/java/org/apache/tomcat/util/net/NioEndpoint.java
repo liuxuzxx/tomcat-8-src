@@ -319,6 +319,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     public int getLocalPort() {
         /**
          * 不明白的是，作者为什么做出来一个副本的对象啊，这不是扯淡吗 你又没有改变这个东西啊，真是不明白，是不是故意部迷阵
+         * 减少getfield的操作
          */
         ServerSocketChannel ssc = serverSock;
         if (ssc == null) {
