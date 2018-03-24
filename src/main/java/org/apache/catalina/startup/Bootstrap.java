@@ -72,7 +72,7 @@ public final class Bootstrap {
 
 	private static final Pattern PATH_PATTERN = Pattern.compile("(\".*?\")|(([^,])*)");
 
-	private static final String TOMCAT_DIR = "/home/user/project/tomcat-8-src";
+	private static final String TOMCAT_DIR = "/home/liuxu/project/java/tomcat-8-src";
 
 	static {
 		// Will always be non-null

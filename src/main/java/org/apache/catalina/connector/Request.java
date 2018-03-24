@@ -111,6 +111,7 @@ import org.ietf.jgss.GSSException;
 
 /**
  * Wrapper object for the Coyote request.
+ * 我真的觉得tomcat的技术是底层的，但是写的代码组织和spring差距不是一条街的问题
  *
  * @author Remy Maucherat
  * @author Craig R. McClanahan
