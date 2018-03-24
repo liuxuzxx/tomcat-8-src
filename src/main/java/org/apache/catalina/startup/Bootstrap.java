@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -72,7 +73,7 @@ public final class Bootstrap {
 
 	private static final Pattern PATH_PATTERN = Pattern.compile("(\".*?\")|(([^,])*)");
 
-	private static final String TOMCAT_DIR = "/home/liuxu/project/java/tomcat-8-src";
+	private static final String TOMCAT_DIR;
 
 	static {
 		// Will always be non-null
@@ -80,6 +81,7 @@ public final class Bootstrap {
 		 * 这个获取的是这个classpath路径，就是本java工程的classpath路径
 		 */
 
+		TOMCAT_DIR = Paths.get("./").toAbsolutePath().toString();
 		System.setProperty("user.dir",TOMCAT_DIR);
 		String userDir = System.getProperty("user.dir");
 
