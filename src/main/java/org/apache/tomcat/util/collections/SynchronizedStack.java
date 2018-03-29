@@ -23,6 +23,7 @@ package org.apache.tomcat.util.collections;
  * The aim is to provide the bare minimum of required functionality as quickly
  * as possible with minimum garbage.
  * 一个同步的栈数据结构，看样子也是Synchronized关键字满天飞啊
+ * 使用数组进行Stack数据结构的模拟，然后加上synchronized关键字就行了
  */
 public class SynchronizedStack<T> {
 

@@ -591,6 +591,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             socketProperties.setProperties(sock);
 
             NioChannel channel = nioChannels.pop();
+            SystemUtil.logInfo(this,"从池子里面拿到的channel的引用是：",channel==null?null:channel.toString());
             if (channel == null) {
                 // SSL setup
                 SystemUtil.logInfo(this,"查看SSL上下文的信息内容：", JSONObject.toJSONString(sslContext));
