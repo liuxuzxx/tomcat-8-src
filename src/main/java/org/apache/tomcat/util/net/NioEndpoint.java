@@ -60,6 +60,8 @@ import org.apache.tomcat.util.net.SecureNioChannel.ApplicationBufferHandler;
 import org.apache.tomcat.util.net.jsse.NioX509KeyManager;
 import org.lx.tomcat.util.SystemUtil;
 
+import com.alibaba.fastjson.JSONObject;
+
 /**
  * NIO tailored thread pool, providing the following services:
  * <ul>
@@ -591,6 +593,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             NioChannel channel = nioChannels.pop();
             if (channel == null) {
                 // SSL setup
+                SystemUtil.logInfo(this,"查看SSL上下文的信息内容：", JSONObject.toJSONString(sslContext));
                 if (sslContext != null) {
                     SSLEngine engine = createSSLEngine();
                     int appbufsize = engine.getSession().getApplicationBufferSize();
@@ -744,11 +747,12 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     // if we have reached max connections, wait
                     countUpOrAwaitConnection();
 
-                    SocketChannel socket = null;
+                    SocketChannel socket;
                     try {
                         // Accept the next incoming connection from the server
                         // socket
                         socket = serverSock.accept();
+                        SystemUtil.logInfo(this,"接受了一个客户端的请求......");
                     } catch (IOException ioe) {
                         /**
                          * 他们的异常抓住之后总是做出一点操作，而不是抛射出去这么的简单，
