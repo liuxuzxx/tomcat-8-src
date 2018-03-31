@@ -243,6 +243,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     /**
      * Return an available poller in true round robin fashion
+     * 这种轮询方式不就是一种最简单的hash算法嘛，使用abs是必要的，因为当轮询次数多了，
+     * 很可能出现负数
      */
     public Poller getPoller0() {
         int idx = Math.abs(pollerRotater.incrementAndGet()) % pollers.length;
@@ -606,6 +608,9 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     channel.reset();
                 }
             }
+            /**
+             * 这句话通过获取Poller，然后就给注册进去了，现在看起来多么的自然的一段代码啊
+             */
             getPoller0().register(channel);
         } catch (Throwable t) {
             ExceptionUtils.handleThrowable(t);
@@ -799,6 +804,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
         /**
          * 装填服务端获取的SocketChannel到Selector当中去
+         *
          * @param socketChannel 需要装填的与客户端打交道的channel
          */
         private void loadingSocketChannel(SocketChannel socketChannel) {
@@ -1245,9 +1251,11 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                                 unreg(sk, attachment, sk.readyOps());
                                 boolean closeSocket = false;
                                 if (sk.isReadable()) {
+                                    SystemUtil.logInfo(this, "可读取状态，下面进行读取..");
                                     closeSocket = !processSocket(attachment, SocketStatus.OPEN_READ, true);
                                 }
                                 if (!closeSocket && sk.isWritable()) {
+                                    SystemUtil.logInfo(this, "可写入状态，下面进行写入操作。。。");
                                     closeSocket = !processSocket(attachment, SocketStatus.OPEN_WRITE, true);
                                 }
                                 if (closeSocket) {
@@ -1629,6 +1637,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
      * This class is the equivalent of the Worker, but will simply use in an
      * external Executor thread pool.
      * Socket的处理就是在这个地方进行一个加工处理的过程
+     * 这作者是把所有的;Acceptor-->Poller--->PollerEvent-->SocketProcessor都给防止在NioEndpoint这个类当中了，
+     * 这样子也好，不用到处来回跳着看class了。
      */
     protected class SocketProcessor implements Runnable {
 
@@ -1677,63 +1687,31 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             try {
                 int handshake = -1;
 
-                try {
-                    if (key != null) {
-                        // For STOP there is no point trying to handshake as the
-                        // Poller has been stopped.
-                        if (socket.isHandshakeComplete() || status == SocketStatus.STOP) {
-                            handshake = 0;
+                handshake = identificationHandshake(socket, key, handshake);
+                switch (handshake) {
+                    case 0:
+                        SocketState state;
+                        // Process the request from this socket
+                        if (status == null) {
+                            state = handler.process(ka, SocketStatus.OPEN_READ);
                         } else {
-                            handshake = socket.handshake(key.isReadable(), key.isWritable());
-                            // The handshake process reads/writes from/to the
-                            // socket. status may therefore be OPEN_WRITE once
-                            // the handshake completes. However, the handshake
-                            // happens when the socket is opened so the status
-                            // must always be OPEN_READ after it completes. It
-                            // is OK to always set this as it is only used if
-                            // the handshake completes.
-                            status = SocketStatus.OPEN_READ;
+                            state = handler.process(ka, status);
                         }
-                    }
-                } catch (IOException x) {
-                    handshake = -1;
-                    if (log.isDebugEnabled())
-                        log.debug("Error during SSL handshake", x);
-                } catch (CancelledKeyException ckx) {
-                    handshake = -1;
-                }
-                if (handshake == 0) {
-                    SocketState state = SocketState.OPEN;
-                    // Process the request from this socket
-                    if (status == null) {
-                        state = handler.process(ka, SocketStatus.OPEN_READ);
-                    } else {
-                        state = handler.process(ka, status);
-                    }
-                    if (state == SocketState.CLOSED) {
-                        close(socket, key, SocketStatus.ERROR);
-                    }
-                } else if (handshake == -1) {
-                    close(socket, key, SocketStatus.DISCONNECT);
-                } else {
-                    ka.getPoller().add(socket, handshake);
+                        if (state == SocketState.CLOSED) {
+                            close(socket, key, SocketStatus.ERROR);
+                        }
+                        break;
+                    case -1:
+                        close(socket, key, SocketStatus.DISCONNECT);
+                        break;
+                    default:
+                        ka.getPoller().add(socket, handshake);
+                        break;
                 }
             } catch (CancelledKeyException cx) {
                 socket.getPoller().cancelledKey(key, null);
             } catch (OutOfMemoryError oom) {
-                try {
-                    oomParachuteData = null;
-                    log.error("", oom);
-                    socket.getPoller().cancelledKey(key, SocketStatus.ERROR);
-                    releaseCaches();
-                } catch (Throwable oomt) {
-                    try {
-                        System.err.println(oomParachuteMsg);
-                        oomt.printStackTrace();
-                    } catch (Throwable letsHopeWeDontGetHere) {
-                        ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
-                    }
-                }
+                cleanOom(socket, key, oom);
             } catch (VirtualMachineError vme) {
                 ExceptionUtils.handleThrowable(vme);
             } catch (Throwable t) {
@@ -1747,6 +1725,51 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     processorCache.push(this);
                 }
             }
+        }
+
+        private void cleanOom(NioChannel socket, SelectionKey key, OutOfMemoryError oom) {
+            try {
+                oomParachuteData = null;
+                log.error("", oom);
+                socket.getPoller().cancelledKey(key, SocketStatus.ERROR);
+                releaseCaches();
+            } catch (Throwable oomt) {
+                try {
+                    System.err.println(oomParachuteMsg);
+                    oomt.printStackTrace();
+                } catch (Throwable letsHopeWeDontGetHere) {
+                    ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
+                }
+            }
+        }
+
+        private int identificationHandshake(NioChannel socket, SelectionKey key, int handshake) {
+            try {
+                if (key != null) {
+                    // For STOP there is no point trying to handshake as the
+                    // Poller has been stopped.
+                    if (socket.isHandshakeComplete() || status == SocketStatus.STOP) {
+                        handshake = 0;
+                    } else {
+                        handshake = socket.handshake(key.isReadable(), key.isWritable());
+                        // The handshake process reads/writes from/to the
+                        // socket. status may therefore be OPEN_WRITE once
+                        // the handshake completes. However, the handshake
+                        // happens when the socket is opened so the status
+                        // must always be OPEN_READ after it completes. It
+                        // is OK to always set this as it is only used if
+                        // the handshake completes.
+                        status = SocketStatus.OPEN_READ;
+                    }
+                }
+            } catch (IOException x) {
+                handshake = -1;
+                if (log.isDebugEnabled())
+                    log.debug("Error during SSL handshake", x);
+            } catch (CancelledKeyException ckx) {
+                handshake = -1;
+            }
+            return handshake;
         }
 
         private void close(NioChannel socket, SelectionKey key, SocketStatus socketStatus) {
