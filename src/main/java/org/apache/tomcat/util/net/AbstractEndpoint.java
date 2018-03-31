@@ -883,7 +883,7 @@ public abstract class AbstractEndpoint<S> {
                 SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
             } catch (NoSuchMethodException nsme) {
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                    nsme);
+                        nsme);
             }
         }
     }
@@ -981,6 +981,13 @@ public abstract class AbstractEndpoint<S> {
         connectionLimitLatch = null;
     }
 
+    /**
+     * 这个函数好像就是tomcat能一次性处理的线程数了。
+     * 通过这个函数的分析，可以看出来如果maxConnections没有进行设置，那么就是对线程个数没有任何限制
+     * 但是系统资源会压制我们的个数，我觉得还是限制点的好。
+     * 当然如果设置了总数限制，那么就使用LimitLatch这个类进行统计就好了，这个是线程安全的，请放心使用。
+     * 换句话来说，如果这个maxConnections的数值是-1的情况下，tomcat就不会限制，不会让这个当前的线程阻塞
+     */
     protected void countUpOrAwaitConnection() throws InterruptedException {
         if (maxConnections == -1)
             return;
@@ -1285,7 +1292,7 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected final Set<SocketWrapper<S>> waitingRequests = Collections
-        .newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
+            .newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
 
     public void removeWaitingRequest(SocketWrapper<S> socketWrapper) {
         waitingRequests.remove(socketWrapper);
@@ -1302,7 +1309,7 @@ public abstract class AbstractEndpoint<S> {
         if (!"".equals(useServerCipherSuitesOrderStr)) {
             SSLParameters sslParameters = engine.getSSLParameters();
             boolean useServerCipherSuitesOrder = ("true".equalsIgnoreCase(useServerCipherSuitesOrderStr)
-                || "yes".equalsIgnoreCase(useServerCipherSuitesOrderStr));
+                    || "yes".equalsIgnoreCase(useServerCipherSuitesOrderStr));
 
             try {
                 // This method is only available in Java 8+
@@ -1312,15 +1319,15 @@ public abstract class AbstractEndpoint<S> {
                 m.invoke(sslParameters, Boolean.valueOf(useServerCipherSuitesOrder));
             } catch (NoSuchMethodException nsme) {
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                    nsme);
+                        nsme);
             } catch (InvocationTargetException ite) {
                 // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                    ite);
+                        ite);
             } catch (IllegalArgumentException iae) {
                 // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                    iae);
+                        iae);
             } catch (IllegalAccessException e) {
                 // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"), e);

@@ -22,6 +22,7 @@ package org.apache.tomcat.util.collections;
  * create an unbounded queue with no requirement to shrink the queue. The aim is
  * to provide the bare minimum of required functionality as quickly as possible
  * with minimum garbage.
+ * 这是一个环队列，就是一直循环使用下去，不过，是size，insert，remove三那个字段进行规范处理的行为
  */
 public class SynchronizedQueue<T> {
 

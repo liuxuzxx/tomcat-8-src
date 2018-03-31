@@ -701,7 +701,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
          * 看这个run方法的书写，真的是这个if-else满眼都是这个东西，这个东西真的是很多啊，
          * 这么优秀的程序员做程序也是很多if-else吗，真的是，也许是最好的办法解决这个办法和方案
          * 从这个调试的角度来看，似乎这个Acceptor是在这个tomcat启动的时候启动的，
-         * 也就是说，这个是在整个项目启动的时候就会启动进行一个线程的启动 之后是进入deamon守护神模式，这样子就可以持续的接受客户端的请求了
+         * 也就是说，这个是在整个项目启动的时候就会启动进行一个线程的启动 之后是进入daemon守护神模式，这样子就可以持续的接受客户端的请求了
+         * 这种睡眠之后，当你醒来的时候，确实需要检查一下状态，才能进行下一步的操作
+         * 要不然，你也不知道你睡眠的这50ms，系统发生了，理论上来说会发生一切。难道
+         * 就没有其他很好的方案可以替换吗？
          */
         @Override
         public void run() {
@@ -710,21 +713,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
             // Loop until we receive a shutdown command
             while (running) {
-                // Loop if endpoint is paused
-                SystemUtil.printInfo(this, "一直运行，等待客户端的访问");
-                while (paused && running) {
-                    state = AcceptorState.PAUSED;
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        // Ignore
-                        /**
-                         * 其实很多的异常是不用问的，因为，就算是你知道地球明天就要灭亡，你又能做什么尼
-                         * 除了面对这个现实之外，你别无选择了，只能冷静的对待了，其实你是没有能力进行拯救地球的
-                         * 所以，很多的异常信息，你就算知道了，那又怎么样子，只能眼睁睁的看着了
-                         */
-                    }
-                }
+                restAcceptor();
 
                 if (!running) {
                     break;
@@ -737,36 +726,27 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
                     SocketChannel socket;
                     try {
-                        // Accept the next incoming connection from the server
-                        // socket
+                        /**
+                         * 终于看到了服务端接受到前端的请求了，就是这个地方，找到了！！！
+                         */
                         socket = serverSock.accept();
                         SystemUtil.logInfo(this, "接受了一个客户端的请求......");
                     } catch (IOException ioe) {
-                        /**
-                         * 他们的异常抓住之后总是做出一点操作，而不是抛射出去这么的简单，
-                         * 就是做点事情呗
-                         */
-                        // we didn't get a socket
-                        countDownConnection();
-                        // Introduce delay if necessary
-                        errorDelay = handleExceptionWithDelay(errorDelay);
+                        errorDelay = cleanAccept(errorDelay);
+
                         // re-throw
                         throw ioe;
                     }
                     // Successful accept, reset the error delay
                     errorDelay = 0;
 
-                    // setSocketOptions() will add channel to the poller
-                    // if successful
-                    if (running && !paused) {
-                        if (!setSocketOptions(socket)) {
-                            countDownConnection();
-                            closeSocket(socket);
-                        }
-                    } else {
-                        countDownConnection();
-                        closeSocket(socket);
-                    }
+                    /**
+                     * 根本上说：这个地方才是服务端接受到客户端的请求之后，然后，获取SocketChannel
+                     * 之后，交给Poller处理，Poller会交给PollerEvent处理，PollerEvent会把这个SocketChannel
+                     * 装填到selector当中去，当然这个selector是Poller的成员变量
+                     */
+                    loadingSocketChannel(socket);
+
                 } catch (SocketTimeoutException sx) {
                     // Ignore: Normal condition
                 } catch (IOException x) {
@@ -777,28 +757,82 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                      * 从Throwable之中实现的中有两种：Exception、Error，这个就是很少见的错误
                      */
                 } catch (OutOfMemoryError oom) {
-                    try {
-                        oomParachuteData = null;
-                        releaseCaches();
-                        log.error("", oom);
-                    } catch (Throwable oomt) {
-                        try {
-                            try {
-                                System.err.println(oomParachuteMsg);
-                                oomt.printStackTrace();
-                            } catch (Throwable letsHopeWeDontGetHere) {
-                                ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
-                            }
-                        } catch (Throwable letsHopeWeDontGetHere) {
-                            ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
-                        }
-                    }
+                    cleanOom(oom);
                 } catch (Throwable t) {
                     ExceptionUtils.handleThrowable(t);
                     log.error(sm.getString("endpoint.accept.fail"), t);
                 }
             }
             state = AcceptorState.ENDED;
+        }
+
+        private int cleanAccept(int errorDelay) {
+            /**
+             * 他们的异常抓住之后总是做出一点操作，而不是抛射出去这么的简单，
+             * 就是做点事情呗
+             */
+            // we didn't get a socket
+            countDownConnection();
+            // Introduce delay if necessary
+            errorDelay = handleExceptionWithDelay(errorDelay);
+            return errorDelay;
+        }
+
+        private void cleanOom(OutOfMemoryError oom) {
+            try {
+                oomParachuteData = null;
+                releaseCaches();
+                log.error("", oom);
+            } catch (Throwable oomt) {
+                try {
+                    try {
+                        System.err.println(oomParachuteMsg);
+                        oomt.printStackTrace();
+                    } catch (Throwable letsHopeWeDontGetHere) {
+                        ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
+                    }
+                } catch (Throwable letsHopeWeDontGetHere) {
+                    ExceptionUtils.handleThrowable(letsHopeWeDontGetHere);
+                }
+            }
+        }
+
+        /**
+         * 装填服务端获取的SocketChannel到Selector当中去
+         * @param socketChannel 需要装填的与客户端打交道的channel
+         */
+        private void loadingSocketChannel(SocketChannel socketChannel) {
+            // setSocketOptions() will add channel to the poller
+            // if successful
+            if (running && !paused) {
+                if (!setSocketOptions(socketChannel)) {
+                    cleanSocketChannel(socketChannel);
+                }
+            } else {
+                cleanSocketChannel(socketChannel);
+            }
+        }
+
+        private void cleanSocketChannel(SocketChannel socket) {
+            countDownConnection();
+            closeSocket(socket);
+        }
+
+        private void restAcceptor() {
+            // Loop if endpoint is paused
+            SystemUtil.printInfo(this, "一直运行，等待客户端的访问");
+            while (paused && running) {
+                state = AcceptorState.PAUSED;
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    /**
+                     * 其实很多的异常是不用问的，因为，就算是你知道地球明天就要灭亡，你又能做什么尼
+                     * 除了面对这个现实之外，你别无选择了，只能冷静的对待了，其实你是没有能力进行拯救地球的
+                     * 所以，很多的异常信息，你就算知道了，那又怎么样子，只能眼睁睁的看着了
+                     */
+                }
+            }
         }
     }
 
@@ -824,6 +858,12 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     /**
      * PollerEvent, cacheable object for poller events to avoid GC
+     * 看PollerEvent，也就是这个循环事件的class，好像只是就是给Poller使用的，没看到其他地方使用这个类
+     * 其实从名字也能看出来，这个就是从属于Poller的Event
+     * 但是一个奇怪的事情就是，这个PollerEvent虽然是实现了Runnable的接口
+     * 但是并没有去开启一个线程，而是按部就班的调用run方法，不知道作者的意思是什么
+     * 我怀疑作者是打算做成一个线程运行，但是后面估计是不需要，也就给使用run直接调用了
+     * 看着很奇怪的感觉
      */
     public static class PollerEvent implements Runnable {
 
@@ -857,12 +897,14 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     log.error("", x);
                 }
             } else {
+                SystemUtil.logInfo(this, "查看一下是否会有不是注册的情况");
                 final SelectionKey key = socket.getIOChannel().keyFor(socket.getPoller().getSelector());
                 try {
                     boolean cancel = false;
                     if (key != null) {
                         final KeyAttachment att = (KeyAttachment) key.attachment();
                         if (att != null) {
+                            SystemUtil.logInfo(this, "查看一下KeyAttachment否为null");
                             att.access();// to prevent timeout
                             // we are registering the key to start with, reset
                             // the fairness counter.
@@ -878,13 +920,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     if (cancel)
                         socket.getPoller().cancelledKey(key, SocketStatus.ERROR);
                 } catch (CancelledKeyException ckx) {
-                    try {
-                        socket.getPoller().cancelledKey(key, SocketStatus.DISCONNECT);
-                    } catch (Exception ignore) {
-                    }
+                    socket.getPoller().cancelledKey(key, SocketStatus.DISCONNECT);
                 }
-            } // end if
-        }// run
+            }
+        }
 
         @Override
         public String toString() {
