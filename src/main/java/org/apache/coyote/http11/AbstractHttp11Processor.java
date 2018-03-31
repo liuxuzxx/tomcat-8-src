@@ -57,6 +57,7 @@ import org.apache.tomcat.util.net.DispatchType;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.apache.tomcat.util.net.SocketWrapper;
 import org.apache.tomcat.util.res.StringManager;
+import org.lx.tomcat.util.SystemUtil;
 
 public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
@@ -975,6 +976,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
     @Override
     public SocketState process(SocketWrapper<S> socketWrapper)
         throws IOException {
+        SystemUtil.logInfo(this,"继续跟踪，果然是这句话对实际的文档信息写入做出了最终的判决");
         RequestInfo rp = request.getRequestProcessor();
         rp.setStage(org.apache.coyote.Constants.STAGE_PARSE);
 
