@@ -19,6 +19,8 @@ package org.apache.tomcat.util.net;
 
 /**
  * Someone, please change the enum name.
+ * 我怎么感觉tomcat的作者在这个Socket的状态上面的设置的enum那么多，我感觉有好几个这种形式的enum
+ * 是不是几个人写的，然后不够统一导致的问题
  *
  * @author remm
  */

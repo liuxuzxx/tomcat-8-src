@@ -33,6 +33,7 @@ import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.C2BConverter;
 import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.res.StringManager;
+import org.lx.tomcat.util.SystemUtil;
 
 /**
  * The buffer used by Tomcat response. This is a derivative of the Tomcat 3.3
@@ -288,6 +289,7 @@ public class OutputBuffer extends Writer
             }
         }
 
+        SystemUtil.logInfo(this,"下面这个if-else语句就是进行写东西到客户端的过程函数分支");
         if (coyoteResponse.getStatus() ==
                 HttpServletResponse.SC_SWITCHING_PROTOCOLS) {
             doFlush(true);
@@ -320,6 +322,7 @@ public class OutputBuffer extends Writer
 
     /**
      * Flush bytes or chars contained in the buffer.
+     * 观察这个函数，首先是写出去HTTP的头部信息，之后才是把身体的信息给写出去
      *
      * @throws IOException An underlying IOException occurred
      */

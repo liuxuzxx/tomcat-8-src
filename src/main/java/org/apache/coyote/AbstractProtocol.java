@@ -556,6 +556,7 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
 
     /**
      * 我说AbstractEndPoint为什么定义一个static的interface，原来是为了在这个地方继承和使用啊
+     * 一般Handler作为后缀的类都是一些手柄类，也就是真正的处理数据的类
      */
     protected abstract static class AbstractConnectionHandler<S, P extends Processor<S>>
             implements AbstractEndpoint.Handler {

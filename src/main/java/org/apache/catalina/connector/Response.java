@@ -906,14 +906,14 @@ public class Response implements HttpServletResponse {
         }
 
         String name = cookie.getName();
-        final String headername = "Set-Cookie";
+        final String headerName = "Set-Cookie";
         final String startsWith = name + "=";
         String header = generateCookieString(cookie);
         boolean set = false;
         MimeHeaders headers = getCoyoteResponse().getMimeHeaders();
         int n = headers.size();
         for (int i = 0; i < n; i++) {
-            if (headers.getName(i).toString().equals(headername)) {
+            if (headers.getName(i).toString().equals(headerName)) {
                 if (headers.getValue(i).toString().startsWith(startsWith)) {
                     headers.getValue(i).setString(header);
                     set = true;
@@ -921,7 +921,7 @@ public class Response implements HttpServletResponse {
             }
         }
         if (!set) {
-            addHeader(headername, header);
+            addHeader(headerName, header);
         }
 
 
@@ -931,12 +931,7 @@ public class Response implements HttpServletResponse {
         // Web application code can receive a IllegalArgumentException
         // from the generateHeader() invocation
         if (SecurityUtil.isPackageProtectionEnabled()) {
-            return AccessController.doPrivileged(new PrivilegedAction<String>() {
-                @Override
-                public String run(){
-                    return getContext().getCookieProcessor().generateHeader(cookie);
-                }
-            });
+            return AccessController.doPrivileged((PrivilegedAction<String>) () -> getContext().getCookieProcessor().generateHeader(cookie));
         } else {
             return getContext().getCookieProcessor().generateHeader(cookie);
         }
@@ -1474,14 +1469,7 @@ public class Response implements HttpServletResponse {
         }
 
         if (SecurityUtil.isPackageProtectionEnabled()) {
-            return (
-                AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
-
-                @Override
-                public Boolean run(){
-                    return Boolean.valueOf(doIsEncodeable(hreq, session, location));
-                }
-            })).booleanValue();
+            return AccessController.doPrivileged((PrivilegedAction<Boolean>) () -> Boolean.valueOf(doIsEncodeable(hreq, session, location)));
         } else {
             return doIsEncodeable(hreq, session, location);
         }
@@ -1606,12 +1594,7 @@ public class Response implements HttpServletResponse {
                     if (SecurityUtil.isPackageProtectionEnabled() ){
                         try{
                             encodedURI = AccessController.doPrivileged(
-                                new PrivilegedExceptionAction<CharChunk>(){
-                                    @Override
-                                    public CharChunk run() throws IOException{
-                                        return urlEncoder.encodeURL(frelativePath, 0, fend);
-                                    }
-                           });
+                                    (PrivilegedExceptionAction<CharChunk>) () -> urlEncoder.encodeURL(frelativePath, 0, fend));
                         } catch (PrivilegedActionException pae){
                             IllegalArgumentException iae =
                                 new IllegalArgumentException(location);

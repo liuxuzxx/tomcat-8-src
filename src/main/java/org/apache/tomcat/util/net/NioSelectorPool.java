@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
+import org.lx.tomcat.util.SystemUtil;
 
 /**
  *
@@ -180,6 +181,7 @@ public class NioSelectorPool {
             while ( (!timedout) && buf.hasRemaining() ) {
                 int cnt = 0;
                 if ( keycount > 0 ) { //only write if we were registered for a write
+                    SystemUtil.logInfo(this,"追本溯源，终于找到了案发第二现场，不过，距离真理就差一个函数调用了");
                     cnt = socket.write(buf); //write the data
                     if (cnt == -1) throw new EOFException();
 

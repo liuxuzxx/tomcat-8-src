@@ -75,8 +75,7 @@ public class CoyoteAdapter implements Adapter {
             System.getProperty("java.vm.vendor") + "/" +
             System.getProperty("java.runtime.version") + ")";
 
-    private static final EnumSet<SessionTrackingMode> SSL_ONLY =
-            EnumSet.of(SessionTrackingMode.SSL);
+    private static final EnumSet<SessionTrackingMode> SSL_ONLY = EnumSet.of(SessionTrackingMode.SSL);
 
     public static final int ADAPTER_NOTES = 1;
 
@@ -86,14 +85,7 @@ public class CoyoteAdapter implements Adapter {
 
 
     private static final ThreadLocal<String> THREAD_NAME =
-            new ThreadLocal<String>() {
-
-                @Override
-                protected String initialValue() {
-                    return Thread.currentThread().getName();
-                }
-
-            };
+            ThreadLocal.withInitial(() -> Thread.currentThread().getName());
 
     // ----------------------------------------------------------- Constructors
 
@@ -123,8 +115,7 @@ public class CoyoteAdapter implements Adapter {
     /**
      * The string manager for this package.
      */
-    protected static final StringManager sm =
-            StringManager.getManager(Constants.Package);
+    protected static final StringManager sm = StringManager.getManager(Constants.Package);
 
 
     // -------------------------------------------------------- Adapter Methods
@@ -472,6 +463,8 @@ public class CoyoteAdapter implements Adapter {
     /**
      * Service method.
      * 这个地方是真正的提供服务的地方，就是提供朝向浏览器输入数据信息的Service的地方函数
+     * 我不明白了，这个地方既然是给客户端返回结果的地方，那么为什么还需要Request这个类的对象啊
+     * 还有，就是两种类型的Request和Response怎么是两种类型
      */
     @SuppressWarnings("deprecation")
     @Override
@@ -500,12 +493,11 @@ public class CoyoteAdapter implements Adapter {
             res.setNote(ADAPTER_NOTES, response);
 
             // Set query string encoding
-            req.getParameters().setQueryStringEncoding
-                    (connector.getURIEncoding());
+            req.getParameters().setQueryStringEncoding(connector.getURIEncoding());
 
         }
 
-        if (connector.getXpoweredBy()) {
+        if (true || connector.getXpoweredBy()) {
             response.addHeader("X-Powered-By", POWERED_BY);
         }
 
@@ -558,6 +550,7 @@ public class CoyoteAdapter implements Adapter {
                     }
                 }
             } else if (!comet) {
+                SystemUtil.logInfo(this,"Response和Request当中的数据开始朝向客户端书写");
                 request.finishRequest();
                 response.finishResponse();
             }
