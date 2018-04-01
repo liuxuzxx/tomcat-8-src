@@ -1621,13 +1621,13 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
      * thread local fields.
      */
     public interface Handler extends AbstractEndpoint.Handler {
-        public SocketState process(SocketWrapper<NioChannel> socket, SocketStatus status);
+        SocketState process(SocketWrapper<NioChannel> socket, SocketStatus status);
 
-        public void release(SocketWrapper<NioChannel> socket);
+        void release(SocketWrapper<NioChannel> socket);
 
-        public void release(SocketChannel socket);
+        void release(SocketChannel socket);
 
-        public SSLImplementation getSslImplementation();
+        SSLImplementation getSslImplementation();
     }
 
     // ---------------------------------------------- SocketProcessor Inner
@@ -1718,12 +1718,16 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                 log.error("", t);
                 socket.getPoller().cancelledKey(key, SocketStatus.ERROR);
             } finally {
-                ka = null;
-                status = null;
-                // return to cache
-                if (running && !paused) {
-                    processorCache.push(this);
-                }
+                cleanFinal();
+            }
+        }
+
+        private void cleanFinal() {
+            ka = null;
+            status = null;
+            // return to cache
+            if (running && !paused) {
+                processorCache.push(this);
             }
         }
 

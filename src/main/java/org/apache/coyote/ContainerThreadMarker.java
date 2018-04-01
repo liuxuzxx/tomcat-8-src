@@ -21,6 +21,7 @@ package org.apache.coyote;
  * data from an incoming connection. Application created threads are not
  * container threads and neither are threads taken from the container thread
  * pool to execute AsyncContext.start(Runnable).
+ * 一直都在讨论的tomcat使用ThreadLocal原来是在这个地方使用的啊，终于见到庐山真面目了.
  */
 public class ContainerThreadMarker {
 

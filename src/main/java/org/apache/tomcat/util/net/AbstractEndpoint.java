@@ -82,7 +82,7 @@ public abstract class AbstractEndpoint<S> {
          *
          * @author liuxu
          */
-        public enum SocketState {
+        enum SocketState {
             // TODO Add a new state to the AsyncStateMachine and remove
             // ASYNC_END (if possible)
             OPEN, CLOSED, LONG, ASYNC_END, SENDFILE, UPGRADING, UPGRADED
@@ -91,12 +91,12 @@ public abstract class AbstractEndpoint<S> {
         /**
          * Obtain the GlobalRequestProcessor associated with the handler.
          */
-        public Object getGlobal();
+        Object getGlobal();
 
         /**
          * Recycle resources associated with the handler.
          */
-        public void recycle();
+        void recycle();
     }
 
     protected enum BindState {
