@@ -127,7 +127,7 @@ public class NioChannel implements ByteChannel {
     @Override
     public int write(ByteBuffer src) throws IOException {
         checkInterruptStatus();
-        SystemUtil.logInfo(this, "筚路蓝缕，千里追凶，终于找到第一案发现场，就是这句话，最原始的SocketChannel朝向"，
+        SystemUtil.logInfo(this, "筚路蓝缕，千里追凶，终于找到第一案发现场，就是这句话，最原始的SocketChannel朝向",
                 "客户端写入数据信息，和我的认知一样...");
         return sc.write(src);
     }
