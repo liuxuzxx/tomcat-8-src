@@ -1,19 +1,3 @@
-/*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package org.apache.coyote.http11;
 
 import java.io.IOException;
@@ -162,25 +146,29 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
      * HTTP request header parsing. Do NOT attempt to read the request body
      * using it.
      *
-     * @throws IOException If an exception occurs during the underlying socket
-     * read operations, or if the given buffer is not big enough to accommodate
-     * the whole line.
      * @return true if data is properly fed; false if no data is available
      * immediately and thread should be freed
+     * @throws IOException If an exception occurs during the underlying socket
+     *                     read operations, or if the given buffer is not big enough to accommodate
+     *                     the whole line.
+     *  这个函数云山雾罩的，我根据自己跟着代码的结果显示：就是解析HTTP的头部信息，
+     *  但是就是填充：method protocol url啊，有必要这么麻烦吗，还一个一个字节的去读
+     *  但是这个buf的byte缓存也是成员变量啊，不是什么static形式的变量。
      */
     @Override
     public boolean parseRequestLine(boolean useAvailableDataOnly)
         throws IOException {
 
         //check state
-        if ( !parsingRequestLine ) return true;
+        if (!parsingRequestLine) {
+            return true;
+        }
         //
         // Skipping blank lines
         //
-        if ( parsingRequestLinePhase < 2 ) {
-            byte chr = 0;
+        if (parsingRequestLinePhase < 2) {
+            byte chr;
             do {
-
                 // Read new bytes if needed
                 if (pos >= lastValid) {
                     if (useAvailableDataOnly) {
@@ -206,12 +194,12 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
             parsingRequestLinePhase = 2;
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Received ["
-                        + new String(buf, pos, lastValid - pos,
-                                StandardCharsets.ISO_8859_1)
-                        + "]");
+                    + new String(buf, pos, lastValid - pos,
+                    StandardCharsets.ISO_8859_1)
+                    + "]");
             }
         }
-        if ( parsingRequestLinePhase == 2 ) {
+        if (parsingRequestLinePhase == 2) {
             //
             // Reading the method name
             // Method name is always US-ASCII
@@ -226,7 +214,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                 // Spec says no CR or LF in method name
                 if (buf[pos] == Constants.CR || buf[pos] == Constants.LF) {
                     throw new IllegalArgumentException(
-                            sm.getString("iib.invalidmethod"));
+                        sm.getString("iib.invalidmethod"));
                 }
                 if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
                     space = true;
@@ -236,7 +224,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
             }
             parsingRequestLinePhase = 3;
         }
-        if ( parsingRequestLinePhase == 3 ) {
+        if (parsingRequestLinePhase == 3) {
             // Spec says single SP but also be tolerant of multiple and/or HT
             boolean space = true;
             while (space) {
@@ -272,27 +260,27 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                     space = true;
                     end = pos;
                 } else if ((buf[pos] == Constants.CR)
-                           || (buf[pos] == Constants.LF)) {
+                    || (buf[pos] == Constants.LF)) {
                     // HTTP/0.9 style request
                     parsingRequestLineEol = true;
                     space = true;
                     end = pos;
                 } else if ((buf[pos] == Constants.QUESTION)
-                           && (parsingRequestLineQPos == -1)) {
+                    && (parsingRequestLineQPos == -1)) {
                     parsingRequestLineQPos = pos;
                 }
                 pos++;
             }
             if (parsingRequestLineQPos >= 0) {
                 request.queryString().setBytes(buf, parsingRequestLineQPos + 1,
-                                               end - parsingRequestLineQPos - 1);
+                    end - parsingRequestLineQPos - 1);
                 request.requestURI().setBytes(buf, parsingRequestLineStart, parsingRequestLineQPos - parsingRequestLineStart);
             } else {
                 request.requestURI().setBytes(buf, parsingRequestLineStart, end - parsingRequestLineStart);
             }
             parsingRequestLinePhase = 5;
         }
-        if ( parsingRequestLinePhase == 5 ) {
+        if (parsingRequestLinePhase == 5) {
             // Spec says single SP but also be tolerant of multiple and/or HT
             boolean space = true;
             while (space) {
@@ -335,7 +323,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                 pos++;
             }
 
-            if ( (end - parsingRequestLineStart) > 0) {
+            if ((end - parsingRequestLineStart) > 0) {
                 request.protocol().setBytes(buf, parsingRequestLineStart, end - parsingRequestLineStart);
             } else {
                 request.protocol().setString("");
@@ -346,20 +334,20 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
             parsingRequestLineStart = 0;
             return true;
         }
-        throw new IllegalStateException("Invalid request line parse phase:"+parsingRequestLinePhase);
+        throw new IllegalStateException("Invalid request line parse phase:" + parsingRequestLinePhase);
     }
 
     protected void expand(int newsize) {
-        if ( newsize > buf.length ) {
+        if (newsize > buf.length) {
             if (parsingHeader) {
                 throw new IllegalArgumentException(
-                        sm.getString("iib.requestheadertoolarge.error"));
+                    sm.getString("iib.requestheadertoolarge.error"));
             }
             // Should not happen
             getLog().warn("Expanding buffer size. Old size: " + buf.length
-                    + ", new size: " + newsize, new Exception());
+                + ", new size: " + newsize, new Exception());
             byte[] tmp = new byte[newsize];
-            System.arraycopy(buf,0,tmp,0,buf.length);
+            System.arraycopy(buf, 0, tmp, 0, buf.length);
             buf = tmp;
         }
     }
@@ -372,7 +360,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
         throws IOException {
         if (!parsingHeader) {
             throw new IllegalStateException(
-                    sm.getString("iib.parseheaders.ise.error"));
+                sm.getString("iib.parseheaders.ise.error"));
         }
 
         HeaderParseStatus status = HeaderParseStatus.HAVE_MORE_HEADERS;
@@ -388,11 +376,11 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
             // From the way how buf is allocated and how blank lines are being
             // read, it should be enough to check (1) only.
             if (pos > headerBufferSize
-                    || buf.length - pos < socketReadBufferSize) {
+                || buf.length - pos < socketReadBufferSize) {
                 throw new IllegalArgumentException(
-                        sm.getString("iib.requestheadertoolarge.error"));
+                    sm.getString("iib.requestheadertoolarge.error"));
             }
-        } while ( status == HeaderParseStatus.HAVE_MORE_HEADERS );
+        } while (status == HeaderParseStatus.HAVE_MORE_HEADERS);
         if (status == HeaderParseStatus.DONE) {
             parsingHeader = false;
             end = pos;
@@ -441,7 +429,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
 
         }
 
-        if ( headerParsePos == HeaderParsePosition.HEADER_START ) {
+        if (headerParsePos == HeaderParsePosition.HEADER_START) {
             // Mark the current buffer position
             headerData.start = pos;
             headerParsePos = HeaderParsePosition.HEADER_NAME;
@@ -495,10 +483,10 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
         //
 
         while (headerParsePos == HeaderParsePosition.HEADER_VALUE_START ||
-               headerParsePos == HeaderParsePosition.HEADER_VALUE ||
-               headerParsePos == HeaderParsePosition.HEADER_MULTI_LINE) {
+            headerParsePos == HeaderParsePosition.HEADER_VALUE ||
+            headerParsePos == HeaderParsePosition.HEADER_MULTI_LINE) {
 
-            if ( headerParsePos == HeaderParsePosition.HEADER_VALUE_START ) {
+            if (headerParsePos == HeaderParsePosition.HEADER_VALUE_START) {
                 // Skipping spaces
                 while (true) {
                     // Read new bytes if needed
@@ -518,7 +506,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                     }
                 }
             }
-            if ( headerParsePos == HeaderParsePosition.HEADER_VALUE ) {
+            if (headerParsePos == HeaderParsePosition.HEADER_VALUE) {
 
                 // Reading bytes until the end of the line
                 boolean eol = false;
@@ -565,8 +553,8 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
             }
 
             chr = buf[pos];
-            if ( headerParsePos == HeaderParsePosition.HEADER_MULTI_LINE ) {
-                if ( (chr != Constants.SP) && (chr != Constants.HT)) {
+            if (headerParsePos == HeaderParsePosition.HEADER_MULTI_LINE) {
+                if ((chr != Constants.SP) && (chr != Constants.HT)) {
                     headerParsePos = HeaderParsePosition.HEADER_START;
                     break;
                 } else {
@@ -580,7 +568,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
         }
         // Set the header value
         headerData.headerValue.setBytes(buf, headerData.start,
-                headerData.lastSignificantChar - headerData.start);
+            headerData.lastSignificantChar - headerData.start);
         headerData.recycle();
         return HeaderParseStatus.HAVE_MORE_HEADERS;
     }
@@ -615,9 +603,9 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
         }
         if (getLog().isDebugEnabled()) {
             getLog().debug(sm.getString("iib.invalidheader", new String(buf,
-                    headerData.start,
-                    headerData.lastSignificantChar - headerData.start + 1,
-                    StandardCharsets.ISO_8859_1)));
+                headerData.start,
+                headerData.lastSignificantChar - headerData.start + 1,
+                StandardCharsets.ISO_8859_1)));
         }
 
         headerParsePos = HeaderParsePosition.HEADER_START;
@@ -625,6 +613,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
     }
 
     private final HeaderParseData headerData = new HeaderParseData();
+
     public static class HeaderParseData {
         /**
          * When parsing header name: first character of the header.<br>
@@ -653,6 +642,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
          * header name and is created after the name has been parsed.
          */
         MessageBytes headerValue = null;
+
         public void recycle() {
             start = 0;
             realPos = 0;

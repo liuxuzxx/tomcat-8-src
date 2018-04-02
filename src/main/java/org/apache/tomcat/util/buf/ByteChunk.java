@@ -79,8 +79,7 @@ public final class ByteChunk implements Cloneable, Serializable {
          * The implementation is allowed to ignore the parameters,
          * and mutate the chunk if it wishes to implement its own buffering.
          */
-        public int realReadBytes(byte cbuf[], int off, int len)
-            throws IOException;
+        int realReadBytes(byte cbuf[], int off, int len) throws IOException;
     }
 
     /** Same as java.nio.channel.WrittableByteChannel.

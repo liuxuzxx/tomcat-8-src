@@ -1020,7 +1020,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         public boolean events() {
             boolean result = false;
 
-            PollerEvent pe = null;
+            PollerEvent pe;
             while ((pe = events.poll()) != null) {
                 result = true;
                 try {

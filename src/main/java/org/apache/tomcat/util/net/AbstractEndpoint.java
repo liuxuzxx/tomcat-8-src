@@ -69,7 +69,7 @@ public abstract class AbstractEndpoint<S> {
     /**
      * 真是活久见啊，static方式的interface都能见到啊
      */
-    public static interface Handler {
+    public interface Handler {
         /**
          * Different types of socket states to react upon.
          */
