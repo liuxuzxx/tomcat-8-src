@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.tomcat.util.net;
 
 import java.io.OutputStreamWriter;
@@ -45,12 +29,6 @@ import org.apache.tomcat.util.threads.TaskQueue;
 import org.apache.tomcat.util.threads.TaskThreadFactory;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.lx.tomcat.util.SystemUtil;
-
-/**
- * @author Mladen Turk
- * @author Remy Maucherat
- */
-
 /**
  * 还好只有1K行的代码，以前自己对200行的代码都会感觉这么多，现在是对1K行的代码，感觉，都是没有什么的 就是这么的任性啊
  * 作者也没有写这个抽象类的注释，这让我可是好找啊，不过，对于这个前台传递过来的信息都是这个是幕后主导者
@@ -59,8 +37,6 @@ import org.lx.tomcat.util.SystemUtil;
  * @author liuxu
  */
 public abstract class AbstractEndpoint<S> {
-
-    // -------------------------------------------------------------- Constants
 
     protected static final String DEFAULT_CIPHERS = "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5";
 
