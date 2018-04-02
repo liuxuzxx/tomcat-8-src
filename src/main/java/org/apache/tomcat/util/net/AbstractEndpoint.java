@@ -204,7 +204,7 @@ public abstract class AbstractEndpoint<S> {
 
     /**
      * Running state of the endpoint.
-     * 这个endpoint的状态信息7
+     * 这个endpoint的状态信息
      */
     protected volatile boolean running = false;
 

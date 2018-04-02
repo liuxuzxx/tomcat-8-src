@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.tomcat.util.net;
 
 import java.io.IOException;
@@ -28,6 +12,8 @@ import java.nio.channels.AsynchronousSocketChannel;
  * Properties that can be set in the &lt;Connector&gt; element
  * in server.xml. All properties are prefixed with &quot;socket.&quot;
  * and are currently only working for the Nio connector
+ * 设置的一些Socket的配置信息内容，可以设置四种形式的Socket
+ * Socket ServerSocket AsynchronousSocketChannel AsynchronousServerSocketChannel
  */
 public class SocketProperties {
     /**
@@ -107,7 +93,7 @@ public class SocketProperties {
      * -1 means unlimited, 0 means no cache
      * Default value is 100MB (1024*1024*100 bytes)
      */
-    protected int bufferPoolSize = 1024*1024*100;
+    protected int bufferPoolSize = 1024 * 1024 * 100;
 
     /**
      * TCP_NO_DELAY option. JVM default used if not set.
@@ -144,7 +130,7 @@ public class SocketProperties {
     /**
      * SO_TIMEOUT option. default is 20000.
      */
-    protected Integer soTimeout = Integer.valueOf(20000);
+    protected Integer soTimeout = 20000;
 
     /**
      * Performance preferences according to
@@ -181,45 +167,41 @@ public class SocketProperties {
      */
     protected int unlockTimeout = 250;
 
-    public void setProperties(Socket socket) throws SocketException{
+    /**
+     * 下面三对函数设置的是Client和Server端的属性设置
+     */
+    public void setProperties(Socket socket) throws SocketException {
         if (rxBufSize != null)
-            socket.setReceiveBufferSize(rxBufSize.intValue());
+            socket.setReceiveBufferSize(rxBufSize);
         if (txBufSize != null)
-            socket.setSendBufferSize(txBufSize.intValue());
-        if (ooBInline !=null)
-            socket.setOOBInline(ooBInline.booleanValue());
+            socket.setSendBufferSize(txBufSize);
+        if (ooBInline != null)
+            socket.setOOBInline(ooBInline);
         if (soKeepAlive != null)
-            socket.setKeepAlive(soKeepAlive.booleanValue());
+            socket.setKeepAlive(soKeepAlive);
         if (performanceConnectionTime != null && performanceLatency != null &&
-                performanceBandwidth != null)
-            socket.setPerformancePreferences(
-                    performanceConnectionTime.intValue(),
-                    performanceLatency.intValue(),
-                    performanceBandwidth.intValue());
+            performanceBandwidth != null)
+            socket.setPerformancePreferences(performanceConnectionTime, performanceLatency, performanceBandwidth);
         if (soReuseAddress != null)
-            socket.setReuseAddress(soReuseAddress.booleanValue());
+            socket.setReuseAddress(soReuseAddress);
         if (soLingerOn != null && soLingerTime != null)
-            socket.setSoLinger(soLingerOn.booleanValue(),
-                    soLingerTime.intValue());
-        if (soTimeout != null && soTimeout.intValue() >= 0)
-            socket.setSoTimeout(soTimeout.intValue());
+            socket.setSoLinger(soLingerOn, soLingerTime);
+        if (soTimeout != null && soTimeout >= 0)
+            socket.setSoTimeout(soTimeout);
         if (tcpNoDelay != null)
-            socket.setTcpNoDelay(tcpNoDelay.booleanValue());
+            socket.setTcpNoDelay(tcpNoDelay);
     }
 
-    public void setProperties(ServerSocket socket) throws SocketException{
+    public void setProperties(ServerSocket socket) throws SocketException {
         if (rxBufSize != null)
-            socket.setReceiveBufferSize(rxBufSize.intValue());
+            socket.setReceiveBufferSize(rxBufSize);
         if (performanceConnectionTime != null && performanceLatency != null &&
-                performanceBandwidth != null)
-            socket.setPerformancePreferences(
-                    performanceConnectionTime.intValue(),
-                    performanceLatency.intValue(),
-                    performanceBandwidth.intValue());
+            performanceBandwidth != null)
+            socket.setPerformancePreferences(performanceConnectionTime, performanceLatency, performanceBandwidth);
         if (soReuseAddress != null)
-            socket.setReuseAddress(soReuseAddress.booleanValue());
-        if (soTimeout != null && soTimeout.intValue() >= 0)
-            socket.setSoTimeout(soTimeout.intValue());
+            socket.setReuseAddress(soReuseAddress);
+        if (soTimeout != null && soTimeout >= 0)
+            socket.setSoTimeout(soTimeout);
     }
 
     public void setProperties(AsynchronousSocketChannel socket) throws IOException {
@@ -231,7 +213,7 @@ public class SocketProperties {
             socket.setOption(StandardSocketOptions.SO_KEEPALIVE, soKeepAlive);
         if (soReuseAddress != null)
             socket.setOption(StandardSocketOptions.SO_REUSEADDR, soReuseAddress);
-        if (soLingerOn != null && soLingerOn.booleanValue() && soLingerTime != null)
+        if (soLingerOn != null && soLingerOn && soLingerTime != null)
             socket.setOption(StandardSocketOptions.SO_LINGER, soLingerTime);
         if (tcpNoDelay != null)
             socket.setOption(StandardSocketOptions.TCP_NODELAY, tcpNoDelay);
@@ -253,51 +235,51 @@ public class SocketProperties {
     }
 
     public boolean getOoBInline() {
-        return ooBInline.booleanValue();
+        return ooBInline;
     }
 
     public int getPerformanceBandwidth() {
-        return performanceBandwidth.intValue();
+        return performanceBandwidth;
     }
 
     public int getPerformanceConnectionTime() {
-        return performanceConnectionTime.intValue();
+        return performanceConnectionTime;
     }
 
     public int getPerformanceLatency() {
-        return performanceLatency.intValue();
+        return performanceLatency;
     }
 
     public int getRxBufSize() {
-        return rxBufSize.intValue();
+        return rxBufSize;
     }
 
     public boolean getSoKeepAlive() {
-        return soKeepAlive.booleanValue();
+        return soKeepAlive;
     }
 
     public boolean getSoLingerOn() {
-        return soLingerOn.booleanValue();
+        return soLingerOn;
     }
 
     public int getSoLingerTime() {
-        return soLingerTime.intValue();
+        return soLingerTime;
     }
 
     public boolean getSoReuseAddress() {
-        return soReuseAddress.booleanValue();
+        return soReuseAddress;
     }
 
     public int getSoTimeout() {
-        return soTimeout.intValue();
+        return soTimeout;
     }
 
     public boolean getTcpNoDelay() {
-        return tcpNoDelay.booleanValue();
+        return tcpNoDelay;
     }
 
     public int getTxBufSize() {
-        return txBufSize.intValue();
+        return txBufSize;
     }
 
     public int getBufferPool() {
@@ -341,48 +323,47 @@ public class SocketProperties {
     }
 
     public void setPerformanceConnectionTime(int performanceConnectionTime) {
-        this.performanceConnectionTime =
-            Integer.valueOf(performanceConnectionTime);
+        this.performanceConnectionTime = performanceConnectionTime;
     }
 
     public void setTxBufSize(int txBufSize) {
-        this.txBufSize = Integer.valueOf(txBufSize);
+        this.txBufSize = txBufSize;
     }
 
     public void setTcpNoDelay(boolean tcpNoDelay) {
-        this.tcpNoDelay = Boolean.valueOf(tcpNoDelay);
+        this.tcpNoDelay = tcpNoDelay;
     }
 
     public void setSoTimeout(int soTimeout) {
-        this.soTimeout = Integer.valueOf(soTimeout);
+        this.soTimeout = soTimeout;
     }
 
     public void setSoReuseAddress(boolean soReuseAddress) {
-        this.soReuseAddress = Boolean.valueOf(soReuseAddress);
+        this.soReuseAddress = soReuseAddress;
     }
 
     public void setSoLingerTime(int soLingerTime) {
-        this.soLingerTime = Integer.valueOf(soLingerTime);
+        this.soLingerTime = soLingerTime;
     }
 
     public void setSoKeepAlive(boolean soKeepAlive) {
-        this.soKeepAlive = Boolean.valueOf(soKeepAlive);
+        this.soKeepAlive = soKeepAlive;
     }
 
     public void setRxBufSize(int rxBufSize) {
-        this.rxBufSize = Integer.valueOf(rxBufSize);
+        this.rxBufSize = rxBufSize;
     }
 
     public void setPerformanceLatency(int performanceLatency) {
-        this.performanceLatency = Integer.valueOf(performanceLatency);
+        this.performanceLatency = performanceLatency;
     }
 
     public void setPerformanceBandwidth(int performanceBandwidth) {
-        this.performanceBandwidth = Integer.valueOf(performanceBandwidth);
+        this.performanceBandwidth = performanceBandwidth;
     }
 
     public void setOoBInline(boolean ooBInline) {
-        this.ooBInline = Boolean.valueOf(ooBInline);
+        this.ooBInline = ooBInline;
     }
 
     public void setDirectBuffer(boolean directBuffer) {
@@ -394,7 +375,7 @@ public class SocketProperties {
     }
 
     public void setSoLingerOn(boolean soLingerOn) {
-        this.soLingerOn = Boolean.valueOf(soLingerOn);
+        this.soLingerOn = soLingerOn;
     }
 
     public void setBufferPool(int bufferPool) {

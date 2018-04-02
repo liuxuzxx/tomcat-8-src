@@ -380,10 +380,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         SystemUtil.logInfo(this, "开始初始化ServerSocketChannel对象，以及初始化对应的服务线程进行服务...");
         serverSock = ServerSocketChannel.open();
         socketProperties.setProperties(serverSock.socket());
-        InetSocketAddress addr = (getAddress() != null ? new InetSocketAddress(getAddress(), getPort())
+        InetSocketAddress address = (getAddress() != null ? new InetSocketAddress(getAddress(), getPort())
                 : new InetSocketAddress(getPort()));
-        SystemUtil.logInfo("IP地址是：", addr.getHostName(), " Port是：", addr.getPort() + "");
-        serverSock.socket().bind(addr, getBacklog());
+        SystemUtil.logInfo("IP地址是：", address.getHostName(), " Port是：", address.getPort() + "");
+        serverSock.socket().bind(address, getBacklog());
         serverSock.configureBlocking(true); // mimic APR behavior
         serverSock.socket().setSoTimeout(getSocketProperties().getSoTimeout());
 
@@ -733,6 +733,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     try {
                         /**
                          * 终于看到了服务端接受到前端的请求了，就是这个地方，找到了！！！
+                         * 通篇来看，tomcat就使用了一个ServerSocketChannel
+                         * 不过话又说回来了，也造不出来大于一个的ServerSocketChannel啊
                          */
                         socket = serverSock.accept();
                         SystemUtil.logInfo(this, "接受了一个客户端的请求......");
