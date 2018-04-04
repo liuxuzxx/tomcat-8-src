@@ -42,9 +42,6 @@ public abstract class AbstractEndpoint<S> {
 
     protected static final StringManager sm = StringManager.getManager("org.apache.tomcat.util.net.res");
 
-    /**
-     * 真是活久见啊，static方式的interface都能见到啊
-     */
     public interface Handler {
         /**
          * Different types of socket states to react upon.
@@ -129,6 +126,9 @@ public abstract class AbstractEndpoint<S> {
 
         /**
          * 看看这个boolean的变量的名字的定义，真是一种美国风味的命名格式 完全是美帝资本主义的命名方式
+         * 基本上volatile 这个修饰符，修饰的基本上都是boolean了，就是一个标志值.
+         * 但是话又说回来，调用一个正在运行的线程对象的其他方法，到底好不好啊。。
+         * 但是，不调用，又没有办法进行信息的传递。
          */
         private volatile boolean asyncTimeoutRunning = true;
 
@@ -144,7 +144,6 @@ public abstract class AbstractEndpoint<S> {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    // Ignore
                     /**
                      * 又是一个ignore的异常信息，从来不是打印出来这个异常信息， 严重的鄙视printStackTrace的方式
                      */
@@ -258,6 +257,9 @@ public abstract class AbstractEndpoint<S> {
 
     private int maxConnections = 10000;
 
+    /**
+     * 在线程启动前的黑夜，请初始化好你们的同步变量的对象，要不然没机会了.
+     */
     public void setMaxConnections(int maxCon) {
         this.maxConnections = maxCon;
         LimitLatch latch = this.connectionLimitLatch;
@@ -396,7 +398,7 @@ public abstract class AbstractEndpoint<S> {
         if (keepAliveTimeout == null) {
             return getSoTimeout();
         } else {
-            return keepAliveTimeout.intValue();
+            return keepAliveTimeout;
         }
     }
 
@@ -1267,8 +1269,7 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    protected final Set<SocketWrapper<S>> waitingRequests = Collections
-            .newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
+    protected final Set<SocketWrapper<S>> waitingRequests = Collections.newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
 
     public void removeWaitingRequest(SocketWrapper<S> socketWrapper) {
         waitingRequests.remove(socketWrapper);
