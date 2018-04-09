@@ -121,6 +121,7 @@ public abstract class AbstractEndpoint<S> {
 
     /**
      * Async timeout thread
+     * 不清楚，为什么还要来个同步时间的线程，目的是为了什么啊。。
      */
     protected class AsyncTimeout implements Runnable {
 
@@ -141,13 +142,7 @@ public abstract class AbstractEndpoint<S> {
 
             // Loop until we receive a shutdown command
             while (asyncTimeoutRunning) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    /**
-                     * 又是一个ignore的异常信息，从来不是打印出来这个异常信息， 严重的鄙视printStackTrace的方式
-                     */
-                }
+                rest();
                 long now = System.currentTimeMillis();
                 for (SocketWrapper<S> socket : waitingRequests) {
                     long access = socket.getLastAccess();
@@ -160,13 +155,19 @@ public abstract class AbstractEndpoint<S> {
 
                 // Loop if endpoint is paused
                 while (paused && asyncTimeoutRunning) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        // Ignore
-                    }
+                    rest();
                 }
 
+            }
+        }
+
+        private void rest() {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                /**
+                 * 又是一个ignore的异常信息，从来不是打印出来这个异常信息， 严重的鄙视printStackTrace的方式
+                 */
             }
         }
 
@@ -209,6 +210,7 @@ public abstract class AbstractEndpoint<S> {
 
     /**
      * Threads used to accept new connections and pass them to worker threads.
+     * 这种其实没有必要使用线程池。因为个数是确定的，线程池是很耗费资源的
      */
     protected Acceptor[] acceptors;
 
@@ -359,6 +361,7 @@ public abstract class AbstractEndpoint<S> {
      * for server sockets. By default, this value is 100.
      * 这个其实是java的socket编程：就是说，这个socket是客户端，但是这个服务器端是：ServerSocket，但是这个客户端之恩那个
      * 只能发送一个请求，但是服务器端就需要接受多个请求，这个时候，我们需要进行一个操作就是：给一个队列，让他们等着
+     * 但是，如果排队的超过100了，是不是说，客户端的请求就不会发送过来了。。？
      */
     private int backlog = 100;
 
