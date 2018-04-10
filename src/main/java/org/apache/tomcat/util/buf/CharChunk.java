@@ -1,19 +1,4 @@
-/*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+
 package org.apache.tomcat.util.buf;
 
 import java.io.IOException;
@@ -29,30 +14,32 @@ import java.io.Serializable;
  * @author James Todd [gonzo@sun.com]
  * @author Costin Manolache
  * @author Remy Maucherat
+ * 作者的意思是说：管理char这个东西，JDK的String是一个好东西，但是啊，String不易变化，而且安全，
+ * 所以，为了灵活性，我们采用自己编写的Char的管理工具类
  */
 public final class CharChunk implements Cloneable, Serializable, CharSequence {
 
     private static final long serialVersionUID = 1L;
 
     // Input interface, used when the buffer is emptied.
-    public static interface CharInputChannel {
+    public interface CharInputChannel {
         /**
          * Read new bytes ( usually the internal conversion buffer ).
          * The implementation is allowed to ignore the parameters,
          * and mutate the chunk if it wishes to implement its own buffering.
          */
-        public int realReadChars(char cbuf[], int off, int len)
+        int realReadChars(char cbuf[], int off, int len)
             throws IOException;
     }
     /**
      *  When we need more space we'll either
      *  grow the buffer ( up to the limit ) or send it to a channel.
      */
-    public static interface CharOutputChannel {
+    public interface CharOutputChannel {
         /** Send the bytes ( usually the internal conversion buffer ).
          *  Expect 8k output if the buffer is full.
          */
-        public void realWriteChars(char cbuf[], int off, int len)
+        void realWriteChars(char cbuf[], int off, int len)
             throws IOException;
     }
 
