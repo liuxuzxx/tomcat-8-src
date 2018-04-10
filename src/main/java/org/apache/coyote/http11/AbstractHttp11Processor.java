@@ -958,6 +958,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
      *                      and the HTTP responses will be written.
      * @throws IOException error during an I/O operation
      * tomcat的作者写这种长代码是不是有瘾啊，凡是处理过程的代码，最少来个200行
+     * 其实，这个函数主要的功能是：解析HTTP的报文，然后返回Response
      */
     @Override
     public SocketState process(SocketWrapper<S> socketWrapper)
@@ -972,16 +973,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         getOutputBuffer().init(socketWrapper, endpoint);
 
         // Flags
-        keepAlive = true;
-        comet = false;
-        openSocket = false;
-        sendfileInProgress = false;
-        readComplete = true;
-        if (endpoint.getUsePolling()) {
-            keptAlive = false;
-        } else {
-            keptAlive = socketWrapper.isKeptAlive();
-        }
+        initFlag(socketWrapper);
 
         if (disableKeepAlive()) {
             socketWrapper.setKeepAliveLeft(0);
@@ -994,6 +986,9 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
             try {
                 setRequestLineReadTimeout();
 
+                /**
+                 * 下面的if的判断语句当中，进行了一个HTTP的header的报文的解析
+                 */
                 if (!getInputBuffer().parseRequestLine(keptAlive)) {
                     if (handleIncompleteRequestLineRead()) {
                         break;
@@ -1027,27 +1022,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 setErrorState(ErrorState.CLOSE_NOW, e);
                 break;
             } catch (Throwable t) {
-                ExceptionUtils.handleThrowable(t);
-                UserDataHelper.Mode logMode = userDataHelper.getNextMode();
-                if (logMode != null) {
-                    String message = sm.getString(
-                            "http11processor.header.parse");
-                    switch (logMode) {
-                        case INFO_THEN_DEBUG:
-                            message += sm.getString(
-                                    "http11processor.fallToDebug");
-                            //$FALL-THROUGH$
-                        case INFO:
-                            getLog().info(message, t);
-                            break;
-                        case DEBUG:
-                            getLog().debug(message, t);
-                    }
-                }
-                // 400 - Bad Request
-                response.setStatus(400);
-                setErrorState(ErrorState.CLOSE_CLEAN, t);
-                getAdapter().log(request, response, 0);
+                badRequestHandler(t);
             }
 
             if (!getErrorState().isError()) {
@@ -1056,14 +1031,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 try {
                     prepareRequest();
                 } catch (Throwable t) {
-                    ExceptionUtils.handleThrowable(t);
-                    if (getLog().isDebugEnabled()) {
-                        getLog().debug(sm.getString("http11processor.request.prepare"), t);
-                    }
-                    // 500 - Internal Server Error
-                    response.setStatus(500);
-                    setErrorState(ErrorState.CLOSE_CLEAN, t);
-                    getAdapter().log(request, response, 0);
+                    filterRequestExceptionHandler(t);
                 }
             }
 
@@ -1093,24 +1061,9 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 } catch (InterruptedIOException e) {
                     setErrorState(ErrorState.CLOSE_NOW, e);
                 } catch (HeadersTooLargeException e) {
-                    // The response should not have been committed but check it
-                    // anyway to be safe
-                    if (response.isCommitted()) {
-                        setErrorState(ErrorState.CLOSE_NOW, e);
-                    } else {
-                        response.reset();
-                        response.setStatus(500);
-                        setErrorState(ErrorState.CLOSE_CLEAN, e);
-                        response.setHeader("Connection", "close"); // TODO: Remove
-                    }
+                    handlerHeaderTooLargeException(e);
                 } catch (Throwable t) {
-                    ExceptionUtils.handleThrowable(t);
-                    getLog().error(sm.getString(
-                            "http11processor.request.process"), t);
-                    // 500 - Internal Server Error
-                    response.setStatus(500);
-                    setErrorState(ErrorState.CLOSE_CLEAN, t);
-                    getAdapter().log(request, response, 0);
+                    handlerHeaderException(t);
                 }
             }
 
@@ -1165,6 +1118,26 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
         rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
 
+        return ruleSocketStatus();
+    }
+
+    private void initFlag(SocketWrapper<S> socketWrapper) {
+        keepAlive = true;
+        comet = false;
+        openSocket = false;
+        sendfileInProgress = false;
+        readComplete = true;
+        if (endpoint.getUsePolling()) {
+            keptAlive = false;
+        } else {
+            keptAlive = socketWrapper.isKeptAlive();
+        }
+    }
+
+    /**
+     * 根据上面的操作情况，裁定状态
+     */
+    private SocketState ruleSocketStatus() {
         if (getErrorState().isError() || endpoint.isPaused()) {
             return SocketState.CLOSED;
         } else if (isAsync() || comet) {
@@ -1188,6 +1161,64 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         }
     }
 
+    private void handlerHeaderException(Throwable t) {
+        ExceptionUtils.handleThrowable(t);
+        getLog().error(sm.getString(
+                "http11processor.request.process"), t);
+        // 500 - Internal Server Error
+        response.setStatus(500);
+        setErrorState(ErrorState.CLOSE_CLEAN, t);
+        getAdapter().log(request, response, 0);
+    }
+
+    private void handlerHeaderTooLargeException(HeadersTooLargeException e) {
+        // The response should not have been committed but check it
+        // anyway to be safe
+        if (response.isCommitted()) {
+            setErrorState(ErrorState.CLOSE_NOW, e);
+        } else {
+            response.reset();
+            response.setStatus(500);
+            setErrorState(ErrorState.CLOSE_CLEAN, e);
+            response.setHeader("Connection", "close"); // TODO: Remove
+        }
+    }
+
+    private void filterRequestExceptionHandler(Throwable t) {
+        ExceptionUtils.handleThrowable(t);
+        if (getLog().isDebugEnabled()) {
+            getLog().debug(sm.getString("http11processor.request.prepare"), t);
+        }
+        // 500 - Internal Server Error
+        response.setStatus(500);
+        setErrorState(ErrorState.CLOSE_CLEAN, t);
+        getAdapter().log(request, response, 0);
+    }
+
+    private void badRequestHandler(Throwable t) {
+        ExceptionUtils.handleThrowable(t);
+        UserDataHelper.Mode logMode = userDataHelper.getNextMode();
+        if (logMode != null) {
+            String message = sm.getString(
+                    "http11processor.header.parse");
+            switch (logMode) {
+                case INFO_THEN_DEBUG:
+                    message += sm.getString(
+                            "http11processor.fallToDebug");
+                    //$FALL-THROUGH$
+                case INFO:
+                    getLog().info(message, t);
+                    break;
+                case DEBUG:
+                    getLog().debug(message, t);
+            }
+        }
+        // 400 - Bad Request
+        response.setStatus(400);
+        setErrorState(ErrorState.CLOSE_CLEAN, t);
+        getAdapter().log(request, response, 0);
+    }
+
 
     private void checkExpectationAndResponseStatus() {
         if (expectation && (response.getStatus() < 200 || response.getStatus() > 299)) {
@@ -1205,6 +1236,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
     /**
      * After reading the request headers, we have to setup the request filters.
+     * 从头到尾，就是一个头部信息的深入解析过程.
      */
     protected void prepareRequest() {
 

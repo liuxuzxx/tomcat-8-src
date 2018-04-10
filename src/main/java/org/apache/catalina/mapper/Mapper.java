@@ -34,6 +34,7 @@ import org.apache.tomcat.util.buf.Ascii;
 import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.res.StringManager;
+import org.lx.tomcat.util.SystemUtil;
 
 /**
  * Mapper, which implements the servlet API mapping rules (which are derived
@@ -827,13 +828,14 @@ public final class Mapper {
 
     /**
      * Wrapper mapping.
+     * 看代码的意思就是：匹配客户端的url，映射到我们后台服务的资源上面
      * @throws IOException if the buffers are too small to hold the results of
      *                     the mapping.
      */
     private final void internalMapWrapper(ContextVersion contextVersion,
                                           CharChunk path,
                                           MappingData mappingData) throws IOException {
-
+        SystemUtil.logInfo(this,"开始匹配访问的URL，映射到后端的资源上面...");
         int pathOffset = path.getOffset();
         int pathEnd = path.getEnd();
         boolean noServletPath = false;

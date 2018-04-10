@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.coyote.Request;
 import org.apache.tomcat.util.buf.MessageBytes;
+import org.lx.tomcat.util.SystemUtil;
 
 public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
 
@@ -158,7 +159,7 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
     @Override
     public boolean parseRequestLine(boolean useAvailableDataOnly)
         throws IOException {
-
+        SystemUtil.logInfo(this,"解析HTTP的header信息数据...");
         //check state
         if (!parsingRequestLine) {
             return true;
