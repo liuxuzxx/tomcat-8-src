@@ -746,6 +746,7 @@ public class CoyoteAdapter implements Adapter {
      *                          processing headers
      * @throws ServletException If the supported methods of the target servlet
      *                          can not be determined
+     *                          tomcat真的是继续发扬长代码的精神病
      */
     @SuppressWarnings("deprecation")
     protected boolean postParseRequest(org.apache.coyote.Request req, Request request,

@@ -1,19 +1,4 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 package org.apache.catalina.connector;
 
 import java.net.InetAddress;
@@ -44,8 +29,11 @@ import org.lx.tomcat.util.SystemUtil;
  *
  * @author Craig R. McClanahan
  * @author Remy Maucherat
+ * 其实，我认为tomcat最精彩的代码部分，莫过于Acceptor配合Poller进行Socket的变成的那块设计
+ * 代码的可读性，我就不说了，确实是我看的源代码当中最丑的一个了，没有之一
+ * 对于另外一种架构：Connector和Engine什么的，我其实感觉没啥。
  */
-public class Connector extends LifecycleMBeanBase  {
+public class Connector extends LifecycleMBeanBase {
 
     private static final Log log = LogFactory.getLog(Connector.class);
 
@@ -56,15 +44,12 @@ public class Connector extends LifecycleMBeanBase  {
     public static final boolean RECYCLE_FACADES =
         Boolean.parseBoolean(System.getProperty("org.apache.catalina.connector.RECYCLE_FACADES", "false"));
 
-
-    // ------------------------------------------------------------ Constructor
-
     public Connector() {
         this(null);
     }
 
     public Connector(String protocol) {
-        SystemUtil.logInfo(this,"启动Service当中的Connector",protocol);
+        SystemUtil.logInfo(this, "启动Service当中的Connector", protocol);
         setProtocol(protocol);
         // Instantiate protocol handler
         ProtocolHandler p = null;
@@ -73,7 +58,7 @@ public class Connector extends LifecycleMBeanBase  {
             p = (ProtocolHandler) clazz.newInstance();
         } catch (Exception e) {
             log.error(sm.getString(
-                    "coyoteConnector.protocolHandlerInstantiationFailed"), e);
+                "coyoteConnector.protocolHandlerInstantiationFailed"), e);
         } finally {
             this.protocolHandler = p;
         }
@@ -84,12 +69,9 @@ public class Connector extends LifecycleMBeanBase  {
         }
     }
 
-
-    // ----------------------------------------------------- Instance Variables
-
-
     /**
      * The <code>Service</code> we are associated with (if any).
+     * 保持的自己上级的引用
      */
     protected Service service = null;
 
@@ -112,7 +94,7 @@ public class Connector extends LifecycleMBeanBase  {
     protected boolean enableLookups = false;
 
 
-    /*
+    /**
      * Is generation of X-Powered-By response header enabled/disabled?
      */
     protected boolean xpoweredBy = false;
@@ -165,14 +147,13 @@ public class Connector extends LifecycleMBeanBase  {
     /**
      * The string manager for this package.
      */
-    protected static final StringManager sm =
-        StringManager.getManager(Constants.Package);
-
+    protected static final StringManager sm = StringManager.getManager(Constants.Package);
 
     /**
      * The maximum number of parameters (GET plus POST) which will be
      * automatically parsed by the container. 10000 by default. A value of less
      * than 0 means no limit.
+     * 最大参数的数量个数
      */
     protected int maxParameterCount = 10000;
 
@@ -211,8 +192,7 @@ public class Connector extends LifecycleMBeanBase  {
      * Coyote Protocol handler class name.
      * Defaults to the Coyote HTTP/1.1 protocolHandler.
      */
-    protected String protocolHandlerClassName =
-        "org.apache.coyote.http11.Http11NioProtocol";
+    protected String protocolHandlerClassName = "org.apache.coyote.http11.Http11NioProtocol";
 
 
     /**
@@ -227,30 +207,28 @@ public class Connector extends LifecycleMBeanBase  {
     protected Adapter adapter = null;
 
 
-     /**
-      * URI encoding.
-      */
-     protected String URIEncoding = null;
-     protected String URIEncodingLower = null;
+    /**
+     * URI encoding.
+     */
+    protected String URIEncoding = null;
+    protected String URIEncodingLower = null;
 
 
-     /**
-      * URI encoding as body.
-      */
-     protected boolean useBodyEncodingForURI = false;
+    /**
+     * URI encoding as body.
+     */
+    protected boolean useBodyEncodingForURI = false;
 
 
-     protected static final HashMap<String,String> replacements =
-             new HashMap<>();
-     static {
-         replacements.put("acceptCount", "backlog");
-         replacements.put("connectionLinger", "soLinger");
-         replacements.put("connectionTimeout", "soTimeout");
-         replacements.put("rootFile", "rootfile");
-     }
+    protected static final HashMap<String, String> replacements =
+        new HashMap<>();
 
-
-    // ------------------------------------------------------------- Properties
+    static {
+        replacements.put("acceptCount", "backlog");
+        replacements.put("connectionLinger", "soLinger");
+        replacements.put("connectionTimeout", "soTimeout");
+        replacements.put("rootFile", "rootfile");
+    }
 
     /**
      * Return a configured property.
@@ -275,53 +253,26 @@ public class Connector extends LifecycleMBeanBase  {
         return IntrospectionUtils.setProperty(protocolHandler, repl, value);
     }
 
-    /**
-     * Return a configured property.
-     */
     public Object getAttribute(String name) {
         return getProperty(name);
     }
 
-
-    /**
-     * Set a configured property.
-     */
     public void setAttribute(String name, Object value) {
         setProperty(name, String.valueOf(value));
     }
 
-
-    /**
-     * Return the <code>Service</code> with which we are associated (if any).
-     */
     public Service getService() {
-
-        return (this.service);
-
+        return service;
     }
 
-
-    /**
-     * Set the <code>Service</code> with which we are associated (if any).
-     *
-     * @param service The service that owns this Engine
-     */
     public void setService(Service service) {
-
         this.service = service;
-
     }
 
-
-    /**
-     * True if the TRACE method is allowed.  Default value is "false".
-     */
     public boolean getAllowTrace() {
-
-        return (this.allowTrace);
+        return allowTrace;
 
     }
-
 
     /**
      * Set the allowTrace flag, to disable or enable the TRACE HTTP method.
@@ -329,215 +280,95 @@ public class Connector extends LifecycleMBeanBase  {
      * @param allowTrace The new allowTrace flag
      */
     public void setAllowTrace(boolean allowTrace) {
-
         this.allowTrace = allowTrace;
         setProperty("allowTrace", String.valueOf(allowTrace));
-
     }
 
-
-    /**
-     * Return the default timeout for async requests in ms.
-     */
     public long getAsyncTimeout() {
-
         return asyncTimeout;
-
     }
 
-
-    /**
-     * Set the default timeout for async requests.
-     *
-     * @param asyncTimeout The new timeout in ms.
-     */
     public void setAsyncTimeout(long asyncTimeout) {
-
-        this.asyncTimeout= asyncTimeout;
+        this.asyncTimeout = asyncTimeout;
         setProperty("asyncTimeout", String.valueOf(asyncTimeout));
-
     }
 
-
-    /**
-     * Return the "enable DNS lookups" flag.
-     */
     public boolean getEnableLookups() {
-
-        return (this.enableLookups);
-
+        return enableLookups;
     }
 
-
-    /**
-     * Set the "enable DNS lookups" flag.
-     *
-     * @param enableLookups The new "enable DNS lookups" flag value
-     */
     public void setEnableLookups(boolean enableLookups) {
-
         this.enableLookups = enableLookups;
         setProperty("enableLookups", String.valueOf(enableLookups));
-
     }
 
-
-    /**
-     * Return the maximum number of headers that are allowed by the container. A
-     * value of less than 0 means no limit.
-     */
     public int getMaxHeaderCount() {
         return ((Integer) getProperty("maxHeaderCount")).intValue();
     }
 
-    /**
-     * Set the maximum number of headers in a request that are allowed by the
-     * container. A value of less than 0 means no limit.
-     *
-     * @param maxHeaderCount The new setting
-     */
     public void setMaxHeaderCount(int maxHeaderCount) {
         setProperty("maxHeaderCount", String.valueOf(maxHeaderCount));
     }
 
-    /**
-     * Return the maximum number of parameters (GET plus POST) that will be
-     * automatically parsed by the container. A value of less than 0 means no
-     * limit.
-     */
     public int getMaxParameterCount() {
         return maxParameterCount;
     }
 
-
-    /**
-     * Set the maximum number of parameters (GET plus POST) that will be
-     * automatically parsed by the container. A value of less than 0 means no
-     * limit.
-     *
-     * @param maxParameterCount The new setting
-     */
     public void setMaxParameterCount(int maxParameterCount) {
         this.maxParameterCount = maxParameterCount;
     }
 
-
-    /**
-     * Return the maximum size of a POST which will be automatically
-     * parsed by the container.
-     */
     public int getMaxPostSize() {
-
-        return (maxPostSize);
-
+        return maxPostSize;
     }
 
-
-    /**
-     * Set the maximum size of a POST which will be automatically
-     * parsed by the container.
-     *
-     * @param maxPostSize The new maximum size in bytes of a POST which will
-     * be automatically parsed by the container
-     */
     public void setMaxPostSize(int maxPostSize) {
-
         this.maxPostSize = maxPostSize;
     }
 
-
-    /**
-     * Return the maximum size of a POST which will be saved by the container
-     * during authentication.
-     */
     public int getMaxSavePostSize() {
-
-        return (maxSavePostSize);
-
+        return maxSavePostSize;
     }
 
-
-    /**
-     * Set the maximum size of a POST which will be saved by the container
-     * during authentication.
-     *
-     * @param maxSavePostSize The new maximum size in bytes of a POST which will
-     * be saved by the container during authentication.
-     */
     public void setMaxSavePostSize(int maxSavePostSize) {
-
         this.maxSavePostSize = maxSavePostSize;
         setProperty("maxSavePostSize", String.valueOf(maxSavePostSize));
     }
 
-
     public String getParseBodyMethods() {
-
         return this.parseBodyMethods;
-
     }
 
     public void setParseBodyMethods(String methods) {
-
         HashSet<String> methodSet = new HashSet<>();
-
-        if( null != methods ) {
+        if (null != methods) {
             methodSet.addAll(Arrays.asList(methods.split("\\s*,\\s*")));
         }
-
-        if( methodSet.contains("TRACE") ) {
+        if (methodSet.contains("TRACE")) {
             throw new IllegalArgumentException(sm.getString("coyoteConnector.parseBodyMethodNoTrace"));
         }
-
         this.parseBodyMethods = methods;
         this.parseBodyMethodsSet = methodSet;
-
     }
 
     protected boolean isParseBodyMethod(String method) {
-
         return parseBodyMethodsSet.contains(method);
-
     }
 
-    /**
-     * Return the port number on which this connector is configured to listen
-     * for requests. The special value of 0 means select a random free port
-     * when the socket is bound.
-     */
     public int getPort() {
-
-        return (this.port);
+        return port;
 
     }
 
-
-    /**
-     * Set the port number on which we listen for requests.
-     *
-     * @param port The new port number
-     */
     public void setPort(int port) {
-
         this.port = port;
         setProperty("port", String.valueOf(port));
-
     }
 
-
-    /**
-     * Return the port number on which this connector is listening to requests.
-     * If the special value for {@link #getPort} of zero is used then this method
-     * will report the actual port bound.
-     */
     public int getLocalPort() {
         return ((Integer) getProperty("localPort")).intValue();
     }
 
-
-    /**
-     * Return the Coyote protocol handler in use.
-     */
     public String getProtocol() {
 
         if ("org.apache.coyote.http11.Http11NioProtocol".equals
@@ -546,23 +377,15 @@ public class Connector extends LifecycleMBeanBase  {
             (getProtocolHandlerClassName())) {
             return "HTTP/1.1";
         } else if ("org.apache.coyote.ajp.AjpNioProtocol".equals
-                   (getProtocolHandlerClassName())
-                   || "org.apache.coyote.ajp.AjpAprProtocol".equals
-                   (getProtocolHandlerClassName())) {
+            (getProtocolHandlerClassName())
+            || "org.apache.coyote.ajp.AjpAprProtocol".equals
+            (getProtocolHandlerClassName())) {
             return "AJP/1.3";
         }
         return getProtocolHandlerClassName();
-
     }
 
-
-    /**
-     * Set the Coyote protocol which will be used by the connector.
-     *
-     * @param protocol The Coyote protocol name
-     */
     public void setProtocol(String protocol) {
-
         if (AprLifecycleListener.isAprAvailable()) {
             if ("HTTP/1.1".equals(protocol)) {
                 setProtocolHandlerClassName
@@ -590,261 +413,110 @@ public class Connector extends LifecycleMBeanBase  {
 
     }
 
-
-    /**
-     * Return the class name of the Coyote protocol handler in use.
-     */
     public String getProtocolHandlerClassName() {
-
-        return (this.protocolHandlerClassName);
-
+        return protocolHandlerClassName;
     }
 
-
-    /**
-     * Set the class name of the Coyote protocol handler which will be used
-     * by the connector.
-     *
-     * @param protocolHandlerClassName The new class name
-     */
     public void setProtocolHandlerClassName(String protocolHandlerClassName) {
-
         this.protocolHandlerClassName = protocolHandlerClassName;
-
     }
 
-
-    /**
-     * Return the protocol handler associated with the connector.
-     */
     public ProtocolHandler getProtocolHandler() {
-
-        return (this.protocolHandler);
-
+        return protocolHandler;
     }
 
-
-    /**
-     * Return the proxy server name for this Connector.
-     */
     public String getProxyName() {
-
-        return (this.proxyName);
-
+        return proxyName;
     }
 
-
-    /**
-     * Set the proxy server name for this Connector.
-     *
-     * @param proxyName The new proxy server name
-     */
     public void setProxyName(String proxyName) {
-
-        if(proxyName != null && proxyName.length() > 0) {
+        if (proxyName != null && proxyName.length() > 0) {
             this.proxyName = proxyName;
             setProperty("proxyName", proxyName);
         } else {
             this.proxyName = null;
         }
-
     }
 
-
-    /**
-     * Return the proxy server port for this Connector.
-     */
     public int getProxyPort() {
-
-        return (this.proxyPort);
-
+        return proxyPort;
     }
 
-
-    /**
-     * Set the proxy server port for this Connector.
-     *
-     * @param proxyPort The new proxy server port
-     */
     public void setProxyPort(int proxyPort) {
-
         this.proxyPort = proxyPort;
         setProperty("proxyPort", String.valueOf(proxyPort));
-
     }
 
-
-    /**
-     * Return the port number to which a request should be redirected if
-     * it comes in on a non-SSL port and is subject to a security constraint
-     * with a transport guarantee that requires SSL.
-     */
     public int getRedirectPort() {
-
-        return (this.redirectPort);
-
+        return redirectPort;
     }
 
-
-    /**
-     * Set the redirect port number.
-     *
-     * @param redirectPort The redirect port number (non-SSL to SSL)
-     */
     public void setRedirectPort(int redirectPort) {
-
         this.redirectPort = redirectPort;
         setProperty("redirectPort", String.valueOf(redirectPort));
-
     }
 
-
-    /**
-     * Return the scheme that will be assigned to requests received
-     * through this connector.  Default value is "http".
-     */
     public String getScheme() {
-
-        return (this.scheme);
-
+        return scheme;
     }
 
-
-    /**
-     * Set the scheme that will be assigned to requests received through
-     * this connector.
-     *
-     * @param scheme The new scheme
-     */
     public void setScheme(String scheme) {
-
         this.scheme = scheme;
-
     }
 
-
-    /**
-     * Return the secure connection flag that will be assigned to requests
-     * received through this connector.  Default value is "false".
-     */
     public boolean getSecure() {
-
-        return (this.secure);
-
+        return secure;
     }
 
-
-    /**
-     * Set the secure connection flag that will be assigned to requests
-     * received through this connector.
-     *
-     * @param secure The new secure connection flag
-     */
     public void setSecure(boolean secure) {
-
         this.secure = secure;
         setProperty("secure", Boolean.toString(secure));
     }
 
-     /**
-      * Return the character encoding to be used for the URI using the original
-      * case.
-      */
-     public String getURIEncoding() {
-         return this.URIEncoding;
-     }
+    public String getURIEncoding() {
+        return this.URIEncoding;
+    }
 
+    public String getURIEncodingLower() {
+        return this.URIEncodingLower;
+    }
 
-     /**
-      * Return the character encoding to be used for the URI using lower case.
-      */
-     public String getURIEncodingLower() {
-         return this.URIEncodingLower;
-     }
+    public void setURIEncoding(String URIEncoding) {
+        this.URIEncoding = URIEncoding;
+        if (URIEncoding == null) {
+            URIEncodingLower = null;
+        } else {
+            this.URIEncodingLower = URIEncoding.toLowerCase(Locale.ENGLISH);
+        }
+        setProperty("uRIEncoding", URIEncoding);
+    }
 
+    public boolean getUseBodyEncodingForURI() {
+        return useBodyEncodingForURI;
+    }
 
-     /**
-      * Set the URI encoding to be used for the URI.
-      *
-      * @param URIEncoding The new URI character encoding.
-      */
-     public void setURIEncoding(String URIEncoding) {
-         this.URIEncoding = URIEncoding;
-         if (URIEncoding == null) {
-             URIEncodingLower = null;
-         } else {
-             this.URIEncodingLower = URIEncoding.toLowerCase(Locale.ENGLISH);
-         }
-         setProperty("uRIEncoding", URIEncoding);
-     }
+    public void setUseBodyEncodingForURI(boolean useBodyEncodingForURI) {
+        this.useBodyEncodingForURI = useBodyEncodingForURI;
+        setProperty("useBodyEncodingForURI", String.valueOf(useBodyEncodingForURI));
+    }
 
-
-     /**
-      * Return the true if the entity body encoding should be used for the URI.
-      */
-     public boolean getUseBodyEncodingForURI() {
-
-         return (this.useBodyEncodingForURI);
-
-     }
-
-
-     /**
-      * Set if the entity body encoding should be used for the URI.
-      *
-      * @param useBodyEncodingForURI The new value for the flag.
-      */
-     public void setUseBodyEncodingForURI(boolean useBodyEncodingForURI) {
-
-         this.useBodyEncodingForURI = useBodyEncodingForURI;
-         setProperty
-             ("useBodyEncodingForURI", String.valueOf(useBodyEncodingForURI));
-
-     }
-
-    /**
-     * Indicates whether the generation of an X-Powered-By response header for
-     * servlet-generated responses is enabled or disabled for this Connector.
-     *
-     * @return true if generation of X-Powered-By response header is enabled,
-     * false otherwise
-     */
     public boolean getXpoweredBy() {
         return xpoweredBy;
     }
 
-
-    /**
-     * Enables or disables the generation of an X-Powered-By header (with value
-     * Servlet/2.5) for all servlet-generated responses returned by this
-     * Connector.
-     *
-     * @param xpoweredBy true if generation of X-Powered-By response header is
-     * to be enabled, false otherwise
-     */
     public void setXpoweredBy(boolean xpoweredBy) {
         this.xpoweredBy = xpoweredBy;
         setProperty("xpoweredBy", String.valueOf(xpoweredBy));
     }
 
-    /**
-     * Enable the use of IP-based virtual hosting.
-     *
-     * @param useIPVHosts <code>true</code> if Hosts are identified by IP,
-     *                    <code>false</code> if Hosts are identified by name.
-     */
     public void setUseIPVHosts(boolean useIPVHosts) {
         this.useIPVHosts = useIPVHosts;
         setProperty("useIPVHosts", String.valueOf(useIPVHosts));
     }
 
-    /**
-     * Test if IP-based virtual hosting is enabled.
-     */
     public boolean getUseIPVHosts() {
         return useIPVHosts;
     }
-
 
     public String getExecutorName() {
         Object obj = protocolHandler.getExecutor();
@@ -854,39 +526,29 @@ public class Connector extends LifecycleMBeanBase  {
         return "Internal";
     }
 
-    // --------------------------------------------------------- Public Methods
-
-
     /**
      * Create (or allocate) and return a Request object suitable for
      * specifying the contents of a Request to the responsible Container.
      */
     public Request createRequest() {
-
         Request request = new Request();
         request.setConnector(this);
-        return (request);
-
+        return request;
     }
-
 
     /**
      * Create (or allocate) and return a Response object suitable for
      * receiving the contents of a Response from the responsible Container.
      */
     public Response createResponse() {
-
         Response response = new Response();
         response.setConnector(this);
-        return (response);
-
+        return response;
     }
 
 
     protected String createObjectNameKeyProperties(String type) {
-
         Object addressObj = getProperty("address");
-
         StringBuilder sb = new StringBuilder("type=");
         sb.append(type);
         sb.append(",port=");
@@ -919,10 +581,9 @@ public class Connector extends LifecycleMBeanBase  {
             protocolHandler.pause();
         } catch (Exception e) {
             log.error(sm.getString
-                      ("coyoteConnector.protocolHandlerPauseFailed"), e);
+                ("coyoteConnector.protocolHandlerPauseFailed"), e);
         }
     }
-
 
     /**
      * Pause the connector.
@@ -932,38 +593,32 @@ public class Connector extends LifecycleMBeanBase  {
             protocolHandler.resume();
         } catch (Exception e) {
             log.error(sm.getString
-                      ("coyoteConnector.protocolHandlerResumeFailed"), e);
+                ("coyoteConnector.protocolHandlerResumeFailed"), e);
         }
     }
 
-
     @Override
     protected void initInternal() throws LifecycleException {
-
         super.initInternal();
-
         // Initialize adapter
         adapter = new CoyoteAdapter(this);
         protocolHandler.setAdapter(adapter);
-
         // Make sure parseBodyMethodsSet has a default
-        if( null == parseBodyMethodsSet ) {
+        if (null == parseBodyMethodsSet) {
             setParseBodyMethods(getParseBodyMethods());
         }
-
         if (protocolHandler.isAprRequired() &&
-                !AprLifecycleListener.isAprAvailable()) {
+            !AprLifecycleListener.isAprAvailable()) {
             throw new LifecycleException(
-                    sm.getString("coyoteConnector.protocolHandlerNoApr",
-                            getProtocolHandlerClassName()));
+                sm.getString("coyoteConnector.protocolHandlerNoApr",
+                    getProtocolHandlerClassName()));
         }
-
         try {
             protocolHandler.init();
         } catch (Exception e) {
             throw new LifecycleException
                 (sm.getString
-                 ("coyoteConnector.protocolHandlerInitializationFailed"), e);
+                    ("coyoteConnector.protocolHandlerInitializationFailed"), e);
         }
     }
 
@@ -971,7 +626,7 @@ public class Connector extends LifecycleMBeanBase  {
     /**
      * Begin processing requests via this Connector.
      *
-     * @exception LifecycleException if a fatal startup error occurs
+     * @throws LifecycleException if a fatal startup error occurs
      */
     @Override
     protected void startInternal() throws LifecycleException {
@@ -979,7 +634,7 @@ public class Connector extends LifecycleMBeanBase  {
         // Validate settings before starting
         if (getPort() < 0) {
             throw new LifecycleException(sm.getString(
-                    "coyoteConnector.invalidPort", Integer.valueOf(getPort())));
+                "coyoteConnector.invalidPort", Integer.valueOf(getPort())));
         }
 
         setState(LifecycleState.STARTING);
@@ -988,13 +643,13 @@ public class Connector extends LifecycleMBeanBase  {
             protocolHandler.start();
         } catch (Exception e) {
             String errPrefix = "";
-            if(this.service != null) {
+            if (this.service != null) {
                 errPrefix += "service.getName(): \"" + this.service.getName() + "\"; ";
             }
 
             throw new LifecycleException
                 (errPrefix + " " + sm.getString
-                 ("coyoteConnector.protocolHandlerStartFailed"), e);
+                    ("coyoteConnector.protocolHandlerStartFailed"), e);
         }
     }
 
@@ -1002,7 +657,7 @@ public class Connector extends LifecycleMBeanBase  {
     /**
      * Terminate processing requests via this Connector.
      *
-     * @exception LifecycleException if a fatal shutdown error occurs
+     * @throws LifecycleException if a fatal shutdown error occurs
      */
     @Override
     protected void stopInternal() throws LifecycleException {
@@ -1014,7 +669,7 @@ public class Connector extends LifecycleMBeanBase  {
         } catch (Exception e) {
             throw new LifecycleException
                 (sm.getString
-                 ("coyoteConnector.protocolHandlerStopFailed"), e);
+                    ("coyoteConnector.protocolHandlerStopFailed"), e);
         }
     }
 
@@ -1026,7 +681,7 @@ public class Connector extends LifecycleMBeanBase  {
         } catch (Exception e) {
             throw new LifecycleException
                 (sm.getString
-                 ("coyoteConnector.protocolHandlerDestroyFailed"), e);
+                    ("coyoteConnector.protocolHandlerDestroyFailed"), e);
         }
 
         if (getService() != null) {
