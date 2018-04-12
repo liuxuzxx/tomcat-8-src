@@ -76,11 +76,9 @@ public final class Bootstrap {
 	private static final String TOMCAT_DIR;
 
 	static {
-		// Will always be non-null
 		/**
 		 * 这个获取的是这个classpath路径，就是本java工程的classpath路径
 		 */
-
 		TOMCAT_DIR = Paths.get("./").toAbsolutePath().toString();
 		System.setProperty("user.dir",TOMCAT_DIR);
 		String userDir = System.getProperty("user.dir");
@@ -171,12 +169,13 @@ public final class Bootstrap {
 
 	/**
 	 * Daemon reference.
+	 * 使用反射获取的catalina守护神对象，和三种类加载器
 	 */
 	private Object catalinaDaemon = null;
 
-	ClassLoader commonLoader = null;
-	ClassLoader catalinaLoader = null;
-	ClassLoader sharedLoader = null;
+	private ClassLoader commonLoader = null;
+	private ClassLoader catalinaLoader = null;
+	private ClassLoader sharedLoader = null;
 
 	// -------------------------------------------------------- Private Methods
 

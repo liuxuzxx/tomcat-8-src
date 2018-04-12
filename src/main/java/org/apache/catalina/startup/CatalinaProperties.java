@@ -29,6 +29,7 @@ import java.util.Properties;
  * Utility class to read the bootstrap Catalina configuration.
  *
  * @author Remy Maucherat
+ * 我咋感觉作者是有点掩耳盗铃啊，你使用一个工具类，你怕什么啊
  */
 public class CatalinaProperties {
 
@@ -42,6 +43,9 @@ public class CatalinaProperties {
         loadProperties();
     }
 
+    private CatalinaProperties(){
+        throw new UnsupportedOperationException("不能实例化这个对象");
+    }
 
     /**
      * Return specified property value.
