@@ -57,6 +57,7 @@ public class CatalinaProperties {
 
     /**
      * Load properties.
+     * 读取catalina的配置文件的信息，然后设置到系统的SystemProperty当中去
      */
     private static void loadProperties() {
 
