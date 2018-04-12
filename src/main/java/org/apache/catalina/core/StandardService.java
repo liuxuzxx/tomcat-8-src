@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.core;
 
 
@@ -89,19 +73,12 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     protected Connector connectors[] = new Connector[0];
     private final Object connectorsLock = new Object();
-
-    /**
-     *
-     */
     protected final ArrayList<Executor> executors = new ArrayList<>();
 
     /**
      * The Container associated with this Service.
-     *
-     * @deprecated Will be made private in 9.0.x
      */
-    @Deprecated
-    protected Container container = null;
+    private Container container = null;
 
     private ClassLoader parentClassLoader = null;
 
@@ -117,8 +94,6 @@ public class StandardService extends LifecycleMBeanBase implements Service {
     protected final MapperListener mapperListener = new MapperListener(mapper, this);
 
 
-    // ------------------------------------------------------------- Properties
-
     @Override
     public Mapper getMapper() {
         return mapper;
@@ -131,9 +106,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public Container getContainer() {
-
-        return (this.container);
-
+        return container;
     }
 
 
@@ -171,15 +144,9 @@ public class StandardService extends LifecycleMBeanBase implements Service {
 
     }
 
-
-    /**
-     * Return the name of this Service.
-     */
     @Override
     public String getName() {
-
-        return (this.name);
-
+        return name;
     }
 
 
@@ -190,9 +157,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public void setName(String name) {
-
         this.name = name;
-
     }
 
 
@@ -201,9 +166,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public Server getServer() {
-
-        return (this.server);
-
+        return server;
     }
 
 
@@ -214,9 +177,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public void setServer(Server server) {
-
         this.server = server;
-
     }
 
 
@@ -231,7 +192,6 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public void addConnector(Connector connector) {
-
         /**
          * 典型的多线程的时候的一个监视器的模式设计方式，就是找一个Object给你当个锁使用
          */
@@ -273,9 +233,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      * @param listener The listener to add
      */
     public void addPropertyChangeListener(PropertyChangeListener listener) {
-
         support.addPropertyChangeListener(listener);
-
     }
 
 
@@ -284,9 +242,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public Connector[] findConnectors() {
-
         return connectors;
-
     }
 
 
@@ -299,7 +255,6 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public void removeConnector(Connector connector) {
-
         synchronized (connectorsLock) {
             int j = -1;
             for (int i = 0; i < connectors.length; i++) {
@@ -331,7 +286,6 @@ public class StandardService extends LifecycleMBeanBase implements Service {
             // Report this property change to interested listeners
             support.firePropertyChange("connector", connector, null);
         }
-
     }
 
 
@@ -341,9 +295,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      * @param listener The listener to remove
      */
     public void removePropertyChangeListener(PropertyChangeListener listener) {
-
         support.removePropertyChangeListener(listener);
-
     }
 
 
@@ -352,12 +304,10 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     public String toString() {
-
         StringBuilder sb = new StringBuilder("StandardService[");
         sb.append(getName());
         sb.append("]");
         return (sb.toString());
-
     }
 
 
@@ -441,11 +391,9 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     protected void startInternal() throws LifecycleException {
-
         if (log.isInfoEnabled())
             log.info(sm.getString("standardService.start.name", this.name));
         setState(LifecycleState.STARTING);
-
         // Start our defined Container first
         if (container != null) {
             synchronized (container) {
@@ -489,7 +437,6 @@ public class StandardService extends LifecycleMBeanBase implements Service {
      */
     @Override
     protected void stopInternal() throws LifecycleException {
-
         // Pause connectors first
         synchronized (connectorsLock) {
             for (Connector connector : connectors) {

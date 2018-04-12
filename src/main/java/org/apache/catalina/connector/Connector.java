@@ -32,6 +32,7 @@ import org.lx.tomcat.util.SystemUtil;
  * 其实，我认为tomcat最精彩的代码部分，莫过于Acceptor配合Poller进行Socket的变成的那块设计
  * 代码的可读性，我就不说了，确实是我看的源代码当中最丑的一个了，没有之一
  * 对于另外一种架构：Connector和Engine什么的，我其实感觉没啥。
+ * 感觉这个就是类似一个配置文件，很多的代码都是get-set方法
  */
 public class Connector extends LifecycleMBeanBase {
 
