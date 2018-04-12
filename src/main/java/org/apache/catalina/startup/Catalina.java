@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.startup;
 
 
@@ -64,17 +48,11 @@ import org.xml.sax.SAXParseException;
  *
  * @author Craig R. McClanahan
  * @author Remy Maucherat
+ * 继续拿Catalina开刀,这次是：解剖这个战斗机
  */
 public class Catalina {
 
-
-    /**
-     * The string manager for this package.
-     */
     protected static final StringManager sm = StringManager.getManager(Constants.Package);
-
-
-    // ----------------------------------------------------- Instance Variables
 
     /**
      * Use await.
@@ -86,7 +64,6 @@ public class Catalina {
      */
     protected String configFile = "conf/server.xml";
 
-    // XXX Should be moved to embedded
     /**
      * The shared extensions class loader for this server.
      */
@@ -117,14 +94,9 @@ public class Catalina {
     protected boolean useNaming = true;
 
 
-    // ----------------------------------------------------------- Constructors
-
     public Catalina() {
         setSecurityProtection();
     }
-
-
-    // ------------------------------------------------------------- Properties
 
     public void setConfigFile(String file) {
         configFile = file;
@@ -197,9 +169,6 @@ public class Catalina {
         return await;
     }
 
-    // ------------------------------------------------------ Protected Methods
-
-
     /**
      * Process the specified command line arguments, and return
      * <code>true</code> if we should continue processing; otherwise
@@ -259,6 +228,7 @@ public class Catalina {
 
     /**
      * Create and configure the Digester we will be using for startup.
+     * Digester好像是一个解析XML的工具
      * 注册JMX服务
      */
     protected Digester createStartDigester() {
@@ -359,8 +329,7 @@ public class Catalina {
         if (log.isDebugEnabled()) {
             log.debug("Digester for server.xml created " + (t2 - t1));
         }
-        return (digester);
-
+        return digester;
     }
 
     /**
@@ -375,13 +344,17 @@ public class Catalina {
             RuleSet ruleSet = (RuleSet) constructor.newInstance(prefix);
             digester.addRuleSet(ruleSet);
         } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug(sm.getString("catalina.noCluster",
-                        e.getClass().getName() + ": " + e.getMessage()), e);
-            } else if (log.isInfoEnabled()) {
-                log.info(sm.getString("catalina.noCluster",
-                        e.getClass().getName() + ": " + e.getMessage()));
-            }
+            logException(e);
+        }
+    }
+
+    private void logException(Exception e) {
+        if (log.isDebugEnabled()) {
+            log.debug(sm.getString("catalina.noCluster",
+                    e.getClass().getName() + ": " + e.getMessage()), e);
+        } else if (log.isInfoEnabled()) {
+            log.info(sm.getString("catalina.noCluster",
+                    e.getClass().getName() + ": " + e.getMessage()));
         }
     }
 
@@ -786,11 +759,6 @@ public class Catalina {
         securityConfig.setPackageAccess();
     }
 
-
-    // --------------------------------------- CatalinaShutdownHook Inner Class
-
-    // XXX Should be moved to embedded !
-
     /**
      * Shutdown hook which will perform a clean shutdown of Catalina if needed.
      */
@@ -823,9 +791,6 @@ public class Catalina {
 }
 
 
-// ------------------------------------------------------------ Private Classes
-
-
 /**
  * Rule that sets the parent class loader for the top object on the stack,
  * which must be a <code>Container</code>.
@@ -833,13 +798,13 @@ public class Catalina {
 
 final class SetParentClassLoaderRule extends Rule {
 
-    public SetParentClassLoaderRule(ClassLoader parentClassLoader) {
+    SetParentClassLoaderRule(ClassLoader parentClassLoader) {
 
         this.parentClassLoader = parentClassLoader;
 
     }
 
-    ClassLoader parentClassLoader = null;
+    private ClassLoader parentClassLoader = null;
 
     @Override
     public void begin(String namespace, String name, Attributes attributes)

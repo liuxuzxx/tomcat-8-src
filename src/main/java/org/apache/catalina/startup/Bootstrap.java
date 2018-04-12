@@ -179,6 +179,7 @@ public final class Bootstrap {
 
 	/**
 	 * 我对这段tomcat自己写了自己的类加载器很感兴趣，决定探索一番。
+	 * 好像三个类加载器，都是URL的类加载器的对象
 	 */
 	private void initClassLoaders() {
 		try {
@@ -238,13 +239,6 @@ public final class Bootstrap {
 		return ClassLoaderFactory.createClassLoader(repositories, parent);
 	}
 
-	/**
-	 * System property replacement in the given string.
-	 *
-	 * @param str
-	 *            The original string
-	 * @return the modified string
-	 */
 	protected String replace(String str) {
 		String result = str;
 		result = result.replaceAll("\\$\\{"+Globals.CATALINA_HOME_PROP+"}",getCatalinaHome());
@@ -266,6 +260,14 @@ public final class Bootstrap {
 		// Load our startup class and call its process() method
 		if (log.isDebugEnabled())
 			log.debug("Loading startup class");
+		startCatalina();
+
+	}
+
+	/**
+	 * 启动catalina
+	 */
+	private void startCatalina() throws Exception{
 		Class<?> startupClass = catalinaLoader.loadClass("org.apache.catalina.startup.Catalina");
 		Object startupInstance = startupClass.newInstance();
 
@@ -281,7 +283,6 @@ public final class Bootstrap {
 		method.invoke(startupInstance, paramValues);
 
 		catalinaDaemon = startupInstance;
-
 	}
 
 	/**
