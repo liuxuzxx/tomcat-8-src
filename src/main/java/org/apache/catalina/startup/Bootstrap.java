@@ -177,8 +177,9 @@ public final class Bootstrap {
 	private ClassLoader catalinaLoader = null;
 	private ClassLoader sharedLoader = null;
 
-	// -------------------------------------------------------- Private Methods
-
+	/**
+	 * 我对这段tomcat自己写了自己的类加载器很感兴趣，决定探索一番。
+	 */
 	private void initClassLoaders() {
 		try {
 			commonLoader = createClassLoader("common", null);
@@ -225,7 +226,7 @@ public final class Bootstrap {
 
 			// Local repository
 			if (repository.endsWith("*.jar")) {
-				repository = repository.substring(0, repository.length() - "*.jar".length());
+				repository = Paths.get(repository).getParent().toString();
 				repositories.add(new Repository(repository, RepositoryType.GLOB));
 			} else if (repository.endsWith(".jar")) {
 				repositories.add(new Repository(repository, RepositoryType.JAR));
@@ -246,8 +247,8 @@ public final class Bootstrap {
 	 */
 	protected String replace(String str) {
 		String result = str;
-		result = result.replaceAll(Globals.CATALINA_HOME_PROP,getCatalinaHome());
-		result = result.replaceAll(Globals.CATALINA_BASE_PROP,getCatalinaBase());
+		result = result.replaceAll("\\$\\{"+Globals.CATALINA_HOME_PROP+"}",getCatalinaHome());
+		result = result.replaceAll("\\$\\{"+Globals.CATALINA_BASE_PROP+"}",getCatalinaBase());
 		return result;
 	}
 
