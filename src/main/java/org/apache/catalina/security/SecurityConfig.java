@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.security;
 
 import java.security.Security;
@@ -24,6 +8,7 @@ import org.apache.catalina.startup.CatalinaProperties;
  * Util class to protect Catalina against package access and insertion.
  * The code are been moved from Catalina.java
  * @author the Catalina.java authors
+ * 我还以为是个什么的JDK的反射安全性质的东西，原来就是一些安全的Config信息，说白了属于数据的操作设置.
  */
 public final class SecurityConfig{
     private static SecurityConfig singleton = null;
@@ -50,12 +35,10 @@ public final class SecurityConfig{
      */
     private final String packageDefinition;
 
-
     /**
      * List of protected package from conf/catalina.properties
      */
     private final String packageAccess;
-
 
     /**
      * Create a single instance of this class.
@@ -76,7 +59,6 @@ public final class SecurityConfig{
         }
     }
 
-
     /**
      * Returns the singleton instance of that class.
      * @return an instance of that class.
@@ -87,7 +69,6 @@ public final class SecurityConfig{
         }
         return singleton;
     }
-
 
     /**
      * Set the security package.access value.
@@ -101,7 +82,6 @@ public final class SecurityConfig{
         }
     }
 
-
     /**
      * Set the security package.definition value.
      */
@@ -113,7 +93,6 @@ public final class SecurityConfig{
             setSecurityProperty("package.definition", packageDefinition);
          }
     }
-
 
     /**
      * Set the proper security property
@@ -129,12 +108,7 @@ public final class SecurityConfig{
             } else {
                 definition = packageList;
             }
-
             Security.setProperty(properties, definition);
         }
     }
-
-
 }
-
-

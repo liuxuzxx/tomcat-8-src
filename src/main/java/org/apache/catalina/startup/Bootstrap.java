@@ -250,22 +250,17 @@ public final class Bootstrap {
 	 * Initialize daemon.
 	 */
 	public void init() throws Exception {
-
 		initClassLoaders();
-
 		Thread.currentThread().setContextClassLoader(catalinaLoader);
-
 		SecurityClassLoad.securityClassLoad(catalinaLoader);
-
-		// Load our startup class and call its process() method
 		if (log.isDebugEnabled())
 			log.debug("Loading startup class");
 		startCatalina();
-
 	}
 
 	/**
 	 * 启动catalina
+	 * 现在好像明白了作者为什么使用类加载器进行加载之后才进行初始化的原因了.
 	 */
 	private void startCatalina() throws Exception{
 		Class<?> startupClass = catalinaLoader.loadClass("org.apache.catalina.startup.Catalina");
@@ -292,7 +287,6 @@ public final class Bootstrap {
 	 * 一个demo，不过，我还是需要上网查询这个单词的意思：演示，样例
 	 */
 	private void load(String[] arguments) throws Exception {
-
 		// Call the load() method
 		String methodName = "load";
 		Object param[];
@@ -310,7 +304,6 @@ public final class Bootstrap {
 		if (log.isDebugEnabled())
 			log.debug("Calling startup class " + method);
 		method.invoke(catalinaDaemon, param);
-
 	}
 
 	/**
@@ -393,14 +386,12 @@ public final class Bootstrap {
 	 * Set flag.
 	 */
 	public void setAwait(boolean await) throws Exception {
-
 		Class<?> paramTypes[] = new Class[1];
 		paramTypes[0] = Boolean.TYPE;
 		Object paramValues[] = new Object[1];
 		paramValues[0] = Boolean.valueOf(await);
 		Method method = catalinaDaemon.getClass().getMethod("setAwait", paramTypes);
 		method.invoke(catalinaDaemon, paramValues);
-
 	}
 
 	public boolean getAwait() throws Exception {
@@ -420,17 +411,10 @@ public final class Bootstrap {
 
 	}
 
-	/**
-	 * Main method and entry point when starting Tomcat via the provided
-	 * scripts.
-	 *
-	 * @param args
-	 *            Command line arguments to be processed
-	 */
 	public static void main(String args[]) {
 		SystemUtil.printInfo(Bootstrap.class, "tomcat从这个地方开始启动了");
 		if (daemon == null) {
-			// Don't set daemon until init() has completed
+			// Don't set daemon until init() has completed,主要是怕没初始化完就给扔出去了，但是，好像是单线程，不会出现问题啊。。。
 			Bootstrap bootstrap = new Bootstrap();
 			try {
 				bootstrap.init();
