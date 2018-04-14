@@ -438,7 +438,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
     @Override
     public void removeService(Service service) {
         synchronized (servicesLock) {
-            if (services.remove(service))
+            if (!services.remove(service))
                 return;
             try {
                 service.stop();

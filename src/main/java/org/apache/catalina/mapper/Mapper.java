@@ -1,19 +1,3 @@
-/*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package org.apache.catalina.mapper;
 
 import java.io.IOException;
@@ -41,46 +25,25 @@ import org.lx.tomcat.util.SystemUtil;
  * from the HTTP rules).
  *
  * @author Remy Maucherat
+ * 部署的项目的映射关系类
  */
 public final class Mapper {
-
-
-    private static final org.apache.juli.logging.Log log =
-        org.apache.juli.logging.LogFactory.getLog(Mapper.class);
-
-    static final StringManager sm =
-        StringManager.getManager(Mapper.class.getPackage().getName());
-
-    // ----------------------------------------------------- Instance Variables
-
+    private static final org.apache.juli.logging.Log log = org.apache.juli.logging.LogFactory.getLog(Mapper.class);
+    private static final StringManager sm = StringManager.getManager(Mapper.class.getPackage().getName());
 
     /**
      * Array containing the virtual hosts definitions.
      */
-    volatile MappedHost[] hosts = new MappedHost[0];
+    private volatile MappedHost[] hosts = new MappedHost[0];
 
-
-    /**
-     * Default host name.
-     */
-    String defaultHostName = null;
-
+    private String defaultHostName = null;
 
     /**
      * Mapping from Context object to Context version to support
      * RequestDispatcher mappings.
      */
-    Map<Context, ContextVersion> contextObjectToContextVersionMap =
-            new ConcurrentHashMap<>();
+    private Map<Context, ContextVersion> contextObjectToContextVersionMap = new ConcurrentHashMap<>();
 
-
-    // --------------------------------------------------------- Public Methods
-
-    /**
-     * Set default host.
-     *
-     * @param defaultHostName Default host name
-     */
     public void setDefaultHostName(String defaultHostName) {
         this.defaultHostName = defaultHostName;
     }
@@ -92,8 +55,7 @@ public final class Mapper {
      * @param aliases Alias names for the virtual host
      * @param host Host object
      */
-    public synchronized void addHost(String name, String[] aliases,
-                                     Host host) {
+    public synchronized void addHost(String name, String[] aliases, Host host) {
         MappedHost[] newHosts = new MappedHost[hosts.length + 1];
         MappedHost newHost = new MappedHost(name, host);
         if (insertMap(hosts, newHosts, newHost)) {
@@ -1511,10 +1473,6 @@ public final class Mapper {
         return false;
     }
 
-
-    // ------------------------------------------------- MapElement Inner Class
-
-
     protected abstract static class MapElement<T> {
 
         public final String name;
@@ -1525,10 +1483,6 @@ public final class Mapper {
             this.object = object;
         }
     }
-
-
-    // ------------------------------------------------------- Host Inner Class
-
 
     protected static final class MappedHost extends MapElement<Host> {
 

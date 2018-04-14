@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina;
 
 import java.io.File;
@@ -44,27 +28,18 @@ import java.util.regex.Pattern;
  * @author Craig R. McClanahan
  */
 public interface Host extends Container {
-
-
-    // ----------------------------------------------------- Manifest Constants
-
-
     /**
      * The ContainerEvent event type sent when a new alias is added
      * by <code>addAlias()</code>.
      */
-    public static final String ADD_ALIAS_EVENT = "addAlias";
+    String ADD_ALIAS_EVENT = "addAlias";
 
 
     /**
      * The ContainerEvent event type sent when an old alias is removed
      * by <code>removeAlias()</code>.
      */
-    public static final String REMOVE_ALIAS_EVENT = "removeAlias";
-
-
-    // ------------------------------------------------------------- Properties
-
+    String REMOVE_ALIAS_EVENT = "removeAlias";
 
     /**
      * Return the XML root for this Host.  This can be an absolute
@@ -72,7 +47,7 @@ public interface Host extends Container {
      * If null, defaults to
      * ${catalina.base}/conf/&lt;engine name&gt;/&lt;host name&gt; directory
      */
-    public String getXmlBase();
+    String getXmlBase();
 
     /**
      * Set the Xml root for this Host.  This can be an absolute
@@ -81,19 +56,19 @@ public interface Host extends Container {
      * ${catalina.base}/conf/&lt;engine name&gt;/&lt;host name&gt; directory
      * @param xmlBase The new XML root
      */
-    public void setXmlBase(String xmlBase);
+    void setXmlBase(String xmlBase);
 
     /**
      * Return a default configuration path of this Host. The file will be
      * canonical if possible.
      */
-    public File getConfigBaseFile();
+    File getConfigBaseFile();
 
     /**
      * Return the application root for this Host.  This can be an absolute
      * pathname, a relative pathname, or a URL.
      */
-    public String getAppBase();
+    String getAppBase();
 
 
     /**
@@ -101,7 +76,7 @@ public interface Host extends Container {
      * will be canonical if possible. There is no guarantee that that the
      * appBase exists.
      */
-    public File getAppBaseFile();
+    File getAppBaseFile();
 
 
     /**
@@ -110,7 +85,7 @@ public interface Host extends Container {
      *
      * @param appBase The new application root
      */
-    public void setAppBase(String appBase);
+    void setAppBase(String appBase);
 
 
     /**
@@ -118,7 +93,7 @@ public interface Host extends Container {
      * this host's child webapps should be discovered and automatically
      * deployed dynamically.
      */
-    public boolean getAutoDeploy();
+    boolean getAutoDeploy();
 
 
     /**
@@ -126,14 +101,14 @@ public interface Host extends Container {
      *
      * @param autoDeploy The new auto deploy flag
      */
-    public void setAutoDeploy(boolean autoDeploy);
+    void setAutoDeploy(boolean autoDeploy);
 
 
     /**
      * Return the Java class name of the context configuration class
      * for new web applications.
      */
-    public String getConfigClass();
+    String getConfigClass();
 
 
     /**
@@ -142,7 +117,7 @@ public interface Host extends Container {
      *
      * @param configClass The new context configuration class
      */
-    public void setConfigClass(String configClass);
+    void setConfigClass(String configClass);
 
 
     /**
@@ -150,7 +125,7 @@ public interface Host extends Container {
      * that this host's child webapps should be discovered and automatically
      * deployed.
      */
-    public boolean getDeployOnStartup();
+    boolean getDeployOnStartup();
 
 
     /**
@@ -158,7 +133,7 @@ public interface Host extends Container {
      *
      * @param deployOnStartup The new deploy on startup flag
      */
-    public void setDeployOnStartup(boolean deployOnStartup);
+    void setDeployOnStartup(boolean deployOnStartup);
 
 
     /**
@@ -166,7 +141,7 @@ public interface Host extends Container {
      * the host's appBase that will be ignored by the automatic deployment
      * process.
      */
-    public String getDeployIgnore();
+    String getDeployIgnore();
 
 
     /**
@@ -174,7 +149,7 @@ public interface Host extends Container {
      * directories in the host's appBase that will be ignored by the automatic
      * deployment process.
      */
-    public Pattern getDeployIgnorePattern();
+    Pattern getDeployIgnorePattern();
 
 
     /**
@@ -182,7 +157,7 @@ public interface Host extends Container {
      * the host's appBase that will be ignored by the automatic deployment
      * process.
      */
-    public void setDeployIgnore(String deployIgnore);
+    void setDeployIgnore(String deployIgnore);
 
 
     /**
@@ -190,7 +165,7 @@ public interface Host extends Container {
      * is primarily for use by components deploying contexts that want to do
      * this in a multi-threaded manner.
      */
-    public ExecutorService getStartStopExecutor();
+    ExecutorService getStartStopExecutor();
 
 
     /**
@@ -198,7 +173,7 @@ public interface Host extends Container {
      * unless they already exist.
      * @return true if the Host will attempt to create directories
      */
-    public boolean getCreateDirs();
+    boolean getCreateDirs();
 
 
     /**
@@ -207,7 +182,7 @@ public interface Host extends Container {
      *
      * @param createDirs The new value for this flag
      */
-    public void setCreateDirs(boolean createDirs);
+    void setCreateDirs(boolean createDirs);
 
 
     /**
@@ -215,7 +190,7 @@ public interface Host extends Container {
      * versions of applications deployed using parallel deployment. This only
      * takes effect is {@link #getAutoDeploy()} also returns true.
      */
-    public boolean getUndeployOldVersions();
+    boolean getUndeployOldVersions();
 
 
     /**
@@ -223,24 +198,21 @@ public interface Host extends Container {
      * applications deployed using parallel deployment. This only takes effect
      * if {@link #getAutoDeploy()} returns true.
      */
-    public void setUndeployOldVersions(boolean undeployOldVersions);
-
-
-    // --------------------------------------------------------- Public Methods
+    void setUndeployOldVersions(boolean undeployOldVersions);
 
     /**
      * Add an alias name that should be mapped to this same Host.
      *
      * @param alias The alias to be added
      */
-    public void addAlias(String alias);
+    void addAlias(String alias);
 
 
     /**
      * Return the set of alias names for this Host.  If none are defined,
      * a zero length array is returned.
      */
-    public String[] findAliases();
+    String[] findAliases();
 
 
     /**
@@ -248,5 +220,5 @@ public interface Host extends Container {
      *
      * @param alias Alias name to be removed
      */
-    public void removeAlias(String alias);
+    void removeAlias(String alias);
 }
