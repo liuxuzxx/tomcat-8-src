@@ -63,7 +63,7 @@ public class Catalina {
     /**
      * Pathname to the server configuration file.
      */
-    protected String configFile = "conf/server.xml";
+    private String configFile = "conf/server.xml";
 
     /**
      * The shared extensions class loader for this server.

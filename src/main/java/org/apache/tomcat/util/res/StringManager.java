@@ -255,7 +255,7 @@ public class StringManager {
 	 * @return The instance associated with the given package and the default
 	 *         Locale
 	 */
-	public static final StringManager getManager(String packageName) {
+	public static StringManager getManager(String packageName) {
 		return getManager(packageName, Locale.getDefault());
 	}
 
@@ -271,41 +271,18 @@ public class StringManager {
 	 *
 	 * @return The instance associated with the given package and Locale
 	 */
-	public static final synchronized StringManager getManager(String packageName, Locale locale) {
+	public static synchronized StringManager getManager(String packageName, Locale locale) {
 
-		Map<Locale, StringManager> map = managers.get(packageName);
-		if (map == null) {
-			/*
-			 * Don't want the HashMap to be expanded beyond LOCALE_CACHE_SIZE.
-			 * Expansion occurs when size() exceeds capacity. Therefore keep
-			 * size at or below capacity. removeEldestEntry() executes after
-			 * insertion therefore the test for removal needs to use one less
-			 * than the maximum desired size
-			 *
-			 */
-			/**
-			 * 自己组建一个map，就是用自己的方式进行c++方式的编程
-			 */
-			map = new LinkedHashMap<Locale, StringManager>(LOCALE_CACHE_SIZE, 1, true) {
-				private static final long serialVersionUID = 1L;
+		Map<Locale, StringManager> map = managers.computeIfAbsent(packageName, k -> new LinkedHashMap<Locale, StringManager>(LOCALE_CACHE_SIZE, 1, true) {
+			private static final long serialVersionUID = 1L;
 
-				@Override
-				protected boolean removeEldestEntry(Map.Entry<Locale, StringManager> eldest) {
-					if (size() > (LOCALE_CACHE_SIZE - 1)) {
-						return true;
-					}
-					return false;
-				}
-			};
-			managers.put(packageName, map);
-		}
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<Locale, StringManager> eldest) {
+				return size() > (LOCALE_CACHE_SIZE - 1);
+			}
+		});
 
-		StringManager mgr = map.get(locale);
-		if (mgr == null) {
-			mgr = new StringManager(packageName, locale);
-			map.put(locale, mgr);
-		}
-		return mgr;
+		return map.computeIfAbsent(locale, l -> new StringManager(packageName, l));
 	}
 
 	/**

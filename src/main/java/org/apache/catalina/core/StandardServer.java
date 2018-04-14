@@ -13,7 +13,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessControlException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import javax.management.ObjectName;
 
@@ -41,7 +44,7 @@ import org.lx.tomcat.util.SystemUtil;
  * (but not required) when deploying and starting Catalina.
  *
  * @author Craig R. McClanahan
- * 攻读Server的一下东西
+ *         攻读Server的一下东西
  */
 public final class StandardServer extends LifecycleMBeanBase implements Server {
 
@@ -83,7 +86,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
     private final NamingContextListener namingContextListener;
 
     /**
-     *关闭的ip 端口 和命令字符串
+     * 关闭的ip 端口 和命令字符串
      */
     private int port = 8005;
     private String address = "localhost";
@@ -99,8 +102,9 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
 
     /**
      * The set of Services associated with this Server.
+     * 我想给改造成List形式，不知道会出现什么问题,因为数组操作起来太复杂了,但是不难
      */
-    private Service services[] = new Service[0];
+    private List<Service> services = new ArrayList<>();
     private final Object servicesLock = new Object();
 
     /**
@@ -215,27 +219,18 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public void addService(Service service) {
-
         service.setServer(this);
-
         synchronized (servicesLock) {
-            Service results[] = new Service[services.length + 1];
-            System.arraycopy(services, 0, results, 0, services.length);
-            results[services.length] = service;
-            services = results;
-
+            services.add(service);
             if (getState().isAvailable()) {
                 try {
                     service.start();
                 } catch (LifecycleException e) {
-                    // Ignore
                 }
             }
-
             // Report this property change to interested listeners
             support.firePropertyChange("service", null, service);
         }
-
     }
 
     public void stopAwait() {
@@ -401,19 +396,17 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public Service findService(String name) {
-
         if (name == null) {
-            return (null);
+            return null;
         }
         synchronized (servicesLock) {
-            for (int i = 0; i < services.length; i++) {
-                if (name.equals(services[i].getName())) {
-                    return (services[i]);
+            for (Service service : services) {
+                if (name.equals(service.getName())) {
+                    return service;
                 }
             }
         }
-        return (null);
-
+        return null;
     }
 
 
@@ -422,18 +415,17 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public Service[] findServices() {
-        return services;
+        return services.toArray(new Service[services.size()]);
     }
 
     /**
      * Return the JMX service names.
      */
     public ObjectName[] getServiceNames() {
-        ObjectName onames[] = new ObjectName[services.length];
-        for (int i = 0; i < services.length; i++) {
-            onames[i] = ((StandardService) services[i]).getObjectName();
-        }
-        return onames;
+        return services.stream()
+                .map(service -> ((StandardService) service).getObjectName())
+                .collect(Collectors.toList())
+                .toArray(new ObjectName[services.size()]);
     }
 
 
@@ -445,30 +437,13 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public void removeService(Service service) {
-
         synchronized (servicesLock) {
-            int j = -1;
-            for (int i = 0; i < services.length; i++) {
-                if (service == services[i]) {
-                    j = i;
-                    break;
-                }
-            }
-            if (j < 0)
+            if (services.remove(service))
                 return;
             try {
-                services[j].stop();
-            } catch (LifecycleException e) {
-                // Ignore
+                service.stop();
+            } catch (LifecycleException ignored) {
             }
-            int k = 0;
-            Service results[] = new Service[services.length - 1];
-            for (int i = 0; i < services.length; i++) {
-                if (i != j)
-                    results[k++] = services[i];
-            }
-            services = results;
-
             // Report this property change to interested listeners
             support.firePropertyChange("service", service, null);
         }
@@ -528,7 +503,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public String toString() {
-        return "StandardServer["+getPort()+"]";
+        return "StandardServer[" + getPort() + "]";
     }
 
     /**
@@ -617,8 +592,8 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
 
         // Start our defined Services
         synchronized (servicesLock) {
-            for (int i = 0; i < services.length; i++) {
-                services[i].start();
+            for(Service service:services){
+                service.start();
             }
         }
     }
@@ -633,17 +608,13 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     protected void stopInternal() throws LifecycleException {
-
         setState(LifecycleState.STOPPING);
         fireLifecycleEvent(CONFIGURE_STOP_EVENT, null);
-
         // Stop our defined Services
-        for (int i = 0; i < services.length; i++) {
-            services[i].stop();
+        for(Service service:services){
+            service.stop();
         }
-
         globalNamingResources.stop();
-
         stopAwait();
     }
 
@@ -699,16 +670,16 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
             }
         }
         // Initialize our defined Services
-        for (int i = 0; i < services.length; i++) {
-            services[i].init();
+        for(Service service:services){
+            service.init();
         }
     }
 
     @Override
     protected void destroyInternal() throws LifecycleException {
         // Destroy our defined Services
-        for (int i = 0; i < services.length; i++) {
-            services[i].destroy();
+        for(Service service:services){
+            service.destroy();
         }
 
         globalNamingResources.destroy();

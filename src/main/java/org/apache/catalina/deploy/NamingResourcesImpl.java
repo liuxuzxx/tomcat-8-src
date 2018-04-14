@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.deploy;
 
 import java.beans.PropertyChangeListener;
@@ -65,31 +49,18 @@ import org.apache.tomcat.util.res.StringManager;
  *
  * @author Remy Maucherat
  */
-public class NamingResourcesImpl extends LifecycleMBeanBase
-        implements Serializable, NamingResources {
+public class NamingResourcesImpl extends LifecycleMBeanBase implements Serializable, NamingResources {
 
     private static final long serialVersionUID = 1L;
 
     private static final Log log = LogFactory.getLog(NamingResourcesImpl.class);
 
-    private static final StringManager sm =
-            StringManager.getManager(Constants.Package);
+    private static final StringManager sm = StringManager.getManager(Constants.Package);
 
     private volatile boolean resourceRequireExplicitRegistration = false;
 
-    // ----------------------------------------------------------- Constructors
-
-
-    /**
-     * Create a new NamingResources instance.
-     */
     public NamingResourcesImpl() {
-        // NOOP
     }
-
-
-    // ----------------------------------------------------- Instance Variables
-
 
     /**
      * Associated container object.
@@ -133,29 +104,24 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      * The resource environment references for this web application,
      * keyed by name.
      */
-    private final HashMap<String, ContextResourceEnvRef> resourceEnvRefs =
-            new HashMap<>();
+    private final HashMap<String, ContextResourceEnvRef> resourceEnvRefs = new HashMap<>();
 
 
     /**
      * The resource references for this web application, keyed by name.
      */
-    private final HashMap<String, ContextResource> resources =
-            new HashMap<>();
-
+    private final HashMap<String, ContextResource> resources = new HashMap<>();
 
     /**
      * The resource links for this web application, keyed by name.
      */
-    private final HashMap<String, ContextResourceLink> resourceLinks =
-            new HashMap<>();
+    private final HashMap<String, ContextResourceLink> resourceLinks = new HashMap<>();
 
 
     /**
      * The web service references for this web application, keyed by name.
      */
-    private final HashMap<String, ContextService> services =
-            new HashMap<>();
+    private final HashMap<String, ContextService> services = new HashMap<>();
 
 
     /**
@@ -167,41 +133,21 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
     /**
      * The property change support for this component.
      */
-    protected final PropertyChangeSupport support =
-            new PropertyChangeSupport(this);
+    protected final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
-
-    // ------------------------------------------------------------- Properties
-
-
-    /**
-     * Get the container with which the naming resources are associated.
-     */
     @Override
     public Object getContainer() {
         return container;
     }
 
-
-    /**
-     * Set the container with which the naming resources are associated.
-     */
     public void setContainer(Object container) {
         this.container = container;
     }
 
-
-    /**
-     * Set the transaction object.
-     */
     public void setTransaction(ContextTransaction transaction) {
         this.transaction = transaction;
     }
 
-
-    /**
-     * Get the transaction object.
-     */
     public ContextTransaction getTransaction() {
         return transaction;
     }
@@ -335,9 +281,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
             return;
         } else {
             if (!checkResourceType(mdr)) {
-                throw new IllegalArgumentException(sm.getString(
-                        "namingResources.resourceTypeFail", mdr.getName(),
-                        mdr.getType()));
+                throw new IllegalArgumentException(sm.getString("namingResources.resourceTypeFail", mdr.getName(), mdr.getType()));
             }
             entries.add(mdr.getName());
         }
@@ -357,9 +301,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      * @param listener The listener to add
      */
     public void addPropertyChangeListener(PropertyChangeListener listener) {
-
         support.addPropertyChangeListener(listener);
-
     }
 
 
@@ -370,7 +312,6 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      */
     @Override
     public void addResource(ContextResource resource) {
-
         if (entries.contains(resource.getName())) {
             return;
         } else {
@@ -406,14 +347,11 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      * @param resource The resource
      */
     public void addResourceEnvRef(ContextResourceEnvRef resource) {
-
         if (entries.contains(resource.getName())) {
             return;
         } else {
             if (!checkResourceType(resource)) {
-                throw new IllegalArgumentException(sm.getString(
-                        "namingResources.resourceTypeFail", resource.getName(),
-                        resource.getType()));
+                throw new IllegalArgumentException(sm.getString("namingResources.resourceTypeFail", resource.getName(), resource.getType()));
             }
             entries.add(resource.getName());
         }
@@ -452,8 +390,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
             try {
                 MBeanUtils.createMBean(resourceLink);
             } catch (Exception e) {
-                log.warn(sm.getString("namingResources.mbeanCreateFail",
-                        resourceLink.getName()), e);
+                log.warn(sm.getString("namingResources.mbeanCreateFail", resourceLink.getName()), e);
             }
         }
     }
@@ -591,8 +528,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
     public MessageDestinationRef[] findMessageDestinationRefs() {
 
         synchronized (mdrs) {
-            MessageDestinationRef results[] =
-                    new MessageDestinationRef[mdrs.size()];
+            MessageDestinationRef results[] = new MessageDestinationRef[mdrs.size()];
             return mdrs.values().toArray(results);
         }
 
@@ -723,10 +659,8 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      * @param name Name of the EJB resource reference to remove
      */
     public void removeEjb(String name) {
-
         entries.remove(name);
-
-        ContextEjb ejb = null;
+        ContextEjb ejb;
         synchronized (ejbs) {
             ejb = ejbs.remove(name);
         }
@@ -745,9 +679,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      */
     @Override
     public void removeEnvironment(String name) {
-
         entries.remove(name);
-
         ContextEnvironment environment = null;
         synchronized (envs) {
             environment = envs.remove(name);
@@ -817,9 +749,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      * @param listener The listener to remove
      */
     public void removePropertyChangeListener(PropertyChangeListener listener) {
-
         support.removePropertyChangeListener(listener);
-
     }
 
 
@@ -830,9 +760,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
      */
     @Override
     public void removeResource(String name) {
-
         entries.remove(name);
-
         ContextResource resource = null;
         synchronized (resources) {
             resource = resources.remove(name);
@@ -1166,8 +1094,7 @@ public class NamingResourcesImpl extends LifecycleMBeanBase
         return true;
     }
 
-    private Class<?> getCompatibleType(Context context,
-                                       ResourceBase resource, Class<?> typeClass) {
+    private Class<?> getCompatibleType(Context context, ResourceBase resource, Class<?> typeClass) {
 
         Class<?> result = null;
 
