@@ -14,14 +14,14 @@ import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.modeler.Registry;
 import org.apache.tomcat.util.res.StringManager;
 
-public abstract class LifecycleMBeanBase extends LifecycleBase
-        implements JmxEnabled {
+/**
+ * 给每个具有生命周期的组件一个JMX的服务
+ */
+public abstract class LifecycleMBeanBase extends LifecycleBase implements JmxEnabled {
 
     private static final Log log = LogFactory.getLog(LifecycleMBeanBase.class);
 
-    private static final StringManager sm =
-        StringManager.getManager("org.apache.catalina.util");
-
+    private static final StringManager sm = StringManager.getManager("org.apache.catalina.util");
 
     /* Cache components of the MBean registration. */
     private String domain = null;
@@ -143,11 +143,9 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
 
             Registry.getRegistry(null, null).registerComponent(obj, on, null);
         } catch (MalformedObjectNameException e) {
-            log.warn(sm.getString("lifecycleMBeanBase.registerFail", obj, name),
-                    e);
+            log.warn(sm.getString("lifecycleMBeanBase.registerFail", obj, name), e);
         } catch (Exception e) {
-            log.warn(sm.getString("lifecycleMBeanBase.registerFail", obj, name),
-                    e);
+            log.warn(sm.getString("lifecycleMBeanBase.registerFail", obj, name), e);
         }
 
         return on;

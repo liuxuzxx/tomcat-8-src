@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.core;
 
 import java.beans.PropertyChangeListener;
@@ -57,20 +41,16 @@ import org.lx.tomcat.util.SystemUtil;
  * (but not required) when deploying and starting Catalina.
  *
  * @author Craig R. McClanahan
+ * 攻读Server的一下东西
  */
 public final class StandardServer extends LifecycleMBeanBase implements Server {
 
     private static final Log log = LogFactory.getLog(StandardServer.class);
 
-
-    // ------------------------------------------------------------ Constructor
-
-
     /**
      * Construct a default instance of this class.
      */
     public StandardServer() {
-
         super();
         SystemUtil.logInfo(this, "开始构造Server对象，启动Catalina的发动机服务");
         globalNamingResources = new NamingResourcesImpl();
@@ -84,10 +64,6 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
         }
 
     }
-
-
-    // ----------------------------------------------------- Instance Variables
-
 
     /**
      * Global naming resources context.
@@ -106,16 +82,12 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     private final NamingContextListener namingContextListener;
 
-
     /**
-     * The port number on which we wait for shutdown commands.
+     *关闭的ip 端口 和命令字符串
      */
     private int port = 8005;
-
-    /**
-     * The address on which we wait for shutdown commands.
-     */
     private String address = "localhost";
+    private String shutdown = "SHUTDOWN";
 
 
     /**
@@ -130,13 +102,6 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     private Service services[] = new Service[0];
     private final Object servicesLock = new Object();
-
-
-    /**
-     * The shutdown command string we are looking for.
-     */
-    private String shutdown = "SHUTDOWN";
-
 
     /**
      * The string manager for this package.
@@ -171,166 +136,77 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
 
     private final Object namingToken = new Object();
 
-
-    // ------------------------------------------------------------- Properties
-
     @Override
     public Object getNamingToken() {
         return namingToken;
     }
 
-
-    /**
-     * Return the global naming resources context.
-     */
     @Override
     public javax.naming.Context getGlobalNamingContext() {
-
-        return (this.globalNamingContext);
-
+        return globalNamingContext;
     }
 
-
-    /**
-     * Set the global naming resources context.
-     *
-     * @param globalNamingContext The new global naming resource context
-     */
     public void setGlobalNamingContext(javax.naming.Context globalNamingContext) {
-
         this.globalNamingContext = globalNamingContext;
 
     }
 
-
-    /**
-     * Return the global naming resources.
-     */
     @Override
     public NamingResourcesImpl getGlobalNamingResources() {
-
-        return (this.globalNamingResources);
-
+        return globalNamingResources;
     }
 
-
-    /**
-     * Set the global naming resources.
-     *
-     * @param globalNamingResources The new global naming resources
-     */
     @Override
-    public void setGlobalNamingResources
-    (NamingResourcesImpl globalNamingResources) {
-
+    public void setGlobalNamingResources(NamingResourcesImpl globalNamingResources) {
         NamingResourcesImpl oldGlobalNamingResources = this.globalNamingResources;
         this.globalNamingResources = globalNamingResources;
         this.globalNamingResources.setContainer(this);
         support.firePropertyChange("globalNamingResources", oldGlobalNamingResources, this.globalNamingResources);
-
     }
 
-
-    /**
-     * Report the current Tomcat Server Release number
-     *
-     * @return Tomcat release identifier
-     */
     public String getServerInfo() {
-
         return ServerInfo.getServerInfo();
     }
 
-    /**
-     * Return the port number we listen to for shutdown commands.
-     */
     @Override
     public int getPort() {
-
-        return (this.port);
-
+        return port;
     }
 
-
-    /**
-     * Set the port number we listen to for shutdown commands.
-     *
-     * @param port The new port number
-     */
     @Override
     public void setPort(int port) {
-
         this.port = port;
-
     }
 
-
-    /**
-     * Return the address on which we listen to for shutdown commands.
-     */
     @Override
     public String getAddress() {
-
-        return (this.address);
-
+        return address;
     }
 
-
-    /**
-     * Set the address on which we listen to for shutdown commands.
-     *
-     * @param address The new address
-     */
     @Override
     public void setAddress(String address) {
-
         this.address = address;
-
     }
 
-    /**
-     * Return the shutdown command string we are waiting for.
-     */
     @Override
     public String getShutdown() {
-
-        return (this.shutdown);
-
+        return shutdown;
     }
 
-
-    /**
-     * Set the shutdown command we are waiting for.
-     *
-     * @param shutdown The new shutdown command
-     */
     @Override
     public void setShutdown(String shutdown) {
-
         this.shutdown = shutdown;
-
     }
 
-
-    /**
-     * Return the outer Catalina startup/shutdown component if present.
-     */
     @Override
     public Catalina getCatalina() {
         return catalina;
     }
 
-
-    /**
-     * Set the outer Catalina startup/shutdown component if present.
-     */
     @Override
     public void setCatalina(Catalina catalina) {
         this.catalina = catalina;
     }
-
-    // --------------------------------------------------------- Server Methods
-
 
     /**
      * Add a new Service to the set of defined Services.
@@ -546,9 +422,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public Service[] findServices() {
-
         return services;
-
     }
 
     /**
@@ -630,20 +504,14 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
         this.catalinaHome = catalinaHome;
     }
 
-
-    // --------------------------------------------------------- Public Methods
-
     /**
      * Add a property change listener to this component.
      *
      * @param listener The listener to add
      */
     public void addPropertyChangeListener(PropertyChangeListener listener) {
-
         support.addPropertyChangeListener(listener);
-
     }
-
 
     /**
      * Remove a property change listener from this component.
@@ -651,9 +519,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      * @param listener The listener to remove
      */
     public void removePropertyChangeListener(PropertyChangeListener listener) {
-
         support.removePropertyChangeListener(listener);
-
     }
 
 
@@ -662,14 +528,8 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      */
     @Override
     public String toString() {
-
-        StringBuilder sb = new StringBuilder("StandardServer[");
-        sb.append(getPort());
-        sb.append("]");
-        return (sb.toString());
-
+        return "StandardServer["+getPort()+"]";
     }
-
 
     /**
      * Write the configuration information for this entire <code>Server</code>

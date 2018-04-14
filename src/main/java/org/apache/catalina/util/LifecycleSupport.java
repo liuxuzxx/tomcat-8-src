@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.util;
 
 import java.util.List;
@@ -24,71 +8,30 @@ import org.apache.catalina.LifecycleEvent;
 import org.apache.catalina.LifecycleListener;
 
 /**
- * Support class to assist in firing LifecycleEvent notifications to
- * registered LifecycleListeners.
- *
- * @author Craig R. McClanahan
+ * 感觉这个类的作用有点和Lifecycle的方法重叠，其实可以删除掉.当然后期如果出现比较复杂的
+ * 还是可以使用一个资源管理类
+ * 原来是这么个关系:Lifecycle具有LifecycleListener这个监听器，但是这个监听器监听的是LifecycleEvent事件
  */
 public final class LifecycleSupport {
+    private final Lifecycle lifecycle;
 
-    // ----------------------------------------------------------- Constructors
+    private final List<LifecycleListener> listeners = new CopyOnWriteArrayList<>();
 
-    /**
-     * Construct a new LifecycleSupport object associated with the specified
-     * Lifecycle component.
-     *
-     * @param lifecycle The Lifecycle component that will be the source
-     *  of events that we fire
-     */
     public LifecycleSupport(Lifecycle lifecycle) {
         super();
         this.lifecycle = lifecycle;
     }
 
 
-    // ----------------------------------------------------- Instance Variables
-
-    /**
-     * The source component for lifecycle events that we will fire.
-     */
-    private final Lifecycle lifecycle;
-
-
-    /**
-     * The list of registered LifecycleListeners for event notifications.
-     */
-    private final List<LifecycleListener> listeners = new CopyOnWriteArrayList<>();
-
-
-    // --------------------------------------------------------- Public Methods
-
-    /**
-     * Add a lifecycle event listener to this component.
-     *
-     * @param listener The listener to add
-     */
     public void addLifecycleListener(LifecycleListener listener) {
         listeners.add(listener);
     }
 
-
-    /**
-     * Get the lifecycle listeners associated with this lifecycle. If this
-     * Lifecycle has no listeners registered, a zero-length array is returned.
-     */
     public LifecycleListener[] findLifecycleListeners() {
         return listeners.toArray(new LifecycleListener[0]);
     }
 
 
-    /**
-     * Notify all lifecycle event listeners that a particular event has
-     * occurred for this Container.  The default implementation performs
-     * this notification synchronously using the calling thread.
-     *
-     * @param type Event type
-     * @param data Event data
-     */
     public void fireLifecycleEvent(String type, Object data) {
         LifecycleEvent event = new LifecycleEvent(lifecycle, type, data);
         for (LifecycleListener listener : listeners) {
@@ -96,12 +39,6 @@ public final class LifecycleSupport {
         }
     }
 
-
-    /**
-     * Remove a lifecycle event listener from this component.
-     *
-     * @param listener The listener to remove
-     */
     public void removeLifecycleListener(LifecycleListener listener) {
         listeners.remove(listener);
     }

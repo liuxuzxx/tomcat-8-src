@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.catalina.util;
 
 import org.apache.catalina.Lifecycle;
@@ -32,13 +15,15 @@ import org.lx.tomcat.util.SystemUtil;
  * Base implementation of the {@link Lifecycle} interface that implements the
  * state transition rules for {@link Lifecycle#start()} and
  * {@link Lifecycle#stop()}
+ * 模板设计模式的抽象类，就是确定一个流程的顺序的抽象。但是如果流程的顺序性不确定，那么，就不能使用这种模式了
+ * 反正设计模式的目的：抽取变化部分，新增，而不是修改。
+ * 好像很多状态都有internal方法，就是组件自己的内部方法
  */
 public abstract class LifecycleBase implements Lifecycle {
 
     private static final Log log = LogFactory.getLog(LifecycleBase.class);
 
-    private static final StringManager sm =
-            StringManager.getManager("org.apache.catalina.util");
+    private static final StringManager sm = StringManager.getManager("org.apache.catalina.util");
 
 
     /**
@@ -54,44 +39,29 @@ public abstract class LifecycleBase implements Lifecycle {
     private volatile LifecycleState state = LifecycleState.NEW;
 
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addLifecycleListener(LifecycleListener listener) {
         lifecycle.addLifecycleListener(listener);
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public LifecycleListener[] findLifecycleListeners() {
         return lifecycle.findLifecycleListeners();
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void removeLifecycleListener(LifecycleListener listener) {
         lifecycle.removeLifecycleListener(listener);
     }
 
-
-    /**
-     * Allow sub classes to fire {@link Lifecycle} events.
-     *
-     * @param type Event type
-     * @param data Data associated with event.
-     */
     protected void fireLifecycleEvent(String type, Object data) {
         lifecycle.fireLifecycleEvent(type, data);
     }
 
-
+    /**
+     * 从 new--->initializing-->initalized 这个生命过程
+     * 而且看代码好像是对进入这个函数进行了一个状态的检查，如果不是new直接抛出异常信息
+     */
     @Override
     public final synchronized void init() throws LifecycleException {
         SystemUtil.logInfo(this, "开始组件的生命周期的一个加载");
@@ -105,8 +75,7 @@ public abstract class LifecycleBase implements Lifecycle {
         } catch (Throwable t) {
             ExceptionUtils.handleThrowable(t);
             setStateInternal(LifecycleState.FAILED, null, false);
-            throw new LifecycleException(
-                    sm.getString("lifecycleBase.initFail", toString()), t);
+            throw new LifecycleException(sm.getString("lifecycleBase.initFail", toString()), t);
         }
 
         setStateInternal(LifecycleState.INITIALIZED, null, false);
@@ -356,8 +325,7 @@ public abstract class LifecycleBase implements Lifecycle {
         setStateInternal(state, data, true);
     }
 
-    private synchronized void setStateInternal(LifecycleState state,
-                                               Object data, boolean check) throws LifecycleException {
+    private synchronized void setStateInternal(LifecycleState state, Object data, boolean check) throws LifecycleException {
 
         if (log.isDebugEnabled()) {
             log.debug(sm.getString("lifecycleBase.setState", this, state));
@@ -398,8 +366,7 @@ public abstract class LifecycleBase implements Lifecycle {
     }
 
     private void invalidTransition(String type) throws LifecycleException {
-        String msg = sm.getString("lifecycleBase.invalidTransition", type,
-                toString(), state);
+        String msg = sm.getString("lifecycleBase.invalidTransition", type, toString(), state);
         throw new LifecycleException(msg);
     }
 }
