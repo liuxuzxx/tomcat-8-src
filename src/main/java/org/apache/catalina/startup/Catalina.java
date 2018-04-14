@@ -474,6 +474,10 @@ public class Catalina {
             }
 
             try {
+                /**
+                 * 具体的Digester是怎么处理的，我不管了，反正是：把server.xml文件当中的信息给反射出来了，
+                 * 并且啊，根据注册的一些类都给实例化了，我说怎么需要这么长的时间操作
+                 */
                 inputSource.setByteStream(inputStream);
                 digester.push(this);
                 digester.parse(inputSource);
@@ -536,21 +540,18 @@ public class Catalina {
 
     /**
      * Start a new server instance.
+     * 哦感觉作者还是那种cpp的思维去写代码，为什么不使用异常机制
      */
     public void start() {
-
         if (getServer() == null) {
             load();
         }
-
         if (getServer() == null) {
             log.fatal("Cannot start server. Server instance is not configured.");
             return;
         }
+        long start = System.nanoTime();
 
-        long t1 = System.nanoTime();
-
-        // Start the new server
         try {
             getServer().start();
         } catch (LifecycleException e) {
@@ -563,9 +564,9 @@ public class Catalina {
             return;
         }
 
-        long t2 = System.nanoTime();
+        long end = System.nanoTime();
         if (log.isInfoEnabled()) {
-            log.info("Server startup in " + ((t2 - t1) / 1000000) + " ms");
+            log.info("Server startup in " + ((end - start) / 1000000) + " ms");
         }
 
         // Register shutdown hook
@@ -580,8 +581,7 @@ public class Catalina {
             // if JULI's hook completes before the CatalinaShutdownHook()
             LogManager logManager = LogManager.getLogManager();
             if (logManager instanceof ClassLoaderLogManager) {
-                ((ClassLoaderLogManager) logManager).setUseShutdownHook(
-                    false);
+                ((ClassLoaderLogManager) logManager).setUseShutdownHook(false);
             }
         }
 
@@ -607,8 +607,7 @@ public class Catalina {
                 // log messages are not lost
                 LogManager logManager = LogManager.getLogManager();
                 if (logManager instanceof ClassLoaderLogManager) {
-                    ((ClassLoaderLogManager) logManager).setUseShutdownHook(
-                        true);
+                    ((ClassLoaderLogManager) logManager).setUseShutdownHook(true);
                 }
             }
         } catch (Throwable t) {
@@ -639,9 +638,7 @@ public class Catalina {
      * Await and shutdown.
      */
     public void await() {
-
         getServer().await();
-
     }
 
 
@@ -659,7 +656,7 @@ public class Catalina {
     }
 
 
-    protected void initDirs() {
+    private void initDirs() {
         String temp = System.getProperty("java.io.tmpdir");
         if (temp == null || (!(new File(temp)).isDirectory())) {
             log.error(sm.getString("embedded.notmp", temp));
@@ -667,14 +664,14 @@ public class Catalina {
     }
 
 
-    protected void initStreams() {
+    private void initStreams() {
         // Replace System.out and System.err with a custom PrintStream
         System.setOut(new SystemLogHandler(System.out));
         System.setErr(new SystemLogHandler(System.err));
     }
 
 
-    protected void initNaming() {
+    private void initNaming() {
         // Setting additional variables
         if (!useNaming) {
             log.info("Catalina naming disabled");
@@ -712,6 +709,7 @@ public class Catalina {
 
     /**
      * Shutdown hook which will perform a clean shutdown of Catalina if needed.
+     * tomcat喜欢使用一个线程作为内部类进而可以操作一些事情，很方便，感觉是专属这个的内部线程类.
      */
     protected class CatalinaShutdownHook extends Thread {
 
@@ -736,8 +734,7 @@ public class Catalina {
     }
 
 
-    private static final org.apache.juli.logging.Log log =
-        org.apache.juli.logging.LogFactory.getLog(Catalina.class);
+    private static final org.apache.juli.logging.Log log = org.apache.juli.logging.LogFactory.getLog(Catalina.class);
 
 }
 

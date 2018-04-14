@@ -388,6 +388,10 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
      * Wait until a proper shutdown command is received, then return.
      * This keeps the main thread alive - the thread pool listening for http
      * connections is daemon threads.
+     * 我说这个函数调用之后，怎么跟着一个stop的函数调用啊。原来tomcat是使用这个函数构建了一个ServerSocket的东西
+     * 然后接受前端到来的shutdown请求，或者说是tcp协议到来的shutdown请求。是不是一种远程停止的请求，确定是了.
+     * 那么await之后，就是shutdown了，之后就是stop了，然后就是各种的清理资源的工作了
+     * 但是这个会占据这主线程.
      */
     @Override
     public void await() {
@@ -414,12 +418,9 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
 
         // Set up a server socket to wait on
         try {
-            awaitSocket = new ServerSocket(port, 1,
-                    InetAddress.getByName(address));
+            awaitSocket = new ServerSocket(port, 1, InetAddress.getByName(address));
         } catch (IOException e) {
-            log.error("StandardServer.await: create[" + address
-                    + ":" + port
-                    + "]: ", e);
+            log.error("StandardServer.await: create[" + address + ":" + port + "]: ", e);
             return;
         }
 
@@ -446,12 +447,10 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
                     } catch (SocketTimeoutException ste) {
                         // This should never happen but bug 56684 suggests that
                         // it does.
-                        log.warn(sm.getString("standardServer.accept.timeout",
-                                Long.valueOf(System.currentTimeMillis() - acceptStartTime)), ste);
+                        log.warn(sm.getString("standardServer.accept.timeout", System.currentTimeMillis() - acceptStartTime), ste);
                         continue;
                     } catch (AccessControlException ace) {
-                        log.warn("StandardServer.accept security exception: "
-                                + ace.getMessage(), ace);
+                        log.warn("StandardServer.accept security exception: " + ace.getMessage(), ace);
                         continue;
                     } catch (IOException e) {
                         if (stopAwait) {
@@ -499,8 +498,7 @@ public final class StandardServer extends LifecycleMBeanBase implements Server {
                     log.info(sm.getString("standardServer.shutdownViaPort"));
                     break;
                 } else
-                    log.warn("StandardServer.await: Invalid command '"
-                            + command.toString() + "' received");
+                    log.warn("StandardServer.await: Invalid command '" + command.toString() + "' received");
             }
         } finally {
             ServerSocket serverSocket = awaitSocket;

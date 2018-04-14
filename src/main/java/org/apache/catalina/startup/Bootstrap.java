@@ -323,10 +323,8 @@ public final class Bootstrap {
 	 * Load the Catalina daemon.
 	 */
 	public void init(String[] arguments) throws Exception {
-
 		init();
 		load(arguments);
-
 	}
 
 	/**
@@ -335,20 +333,16 @@ public final class Bootstrap {
 	public void start() throws Exception {
 		if (catalinaDaemon == null)
 			init();
-
 		Method method = catalinaDaemon.getClass().getMethod("start", (Class[]) null);
 		method.invoke(catalinaDaemon, (Object[]) null);
-
 	}
 
 	/**
 	 * Stop the Catalina Daemon.
 	 */
 	public void stop() throws Exception {
-
 		Method method = catalinaDaemon.getClass().getMethod("stop", (Class[]) null);
 		method.invoke(catalinaDaemon, (Object[]) null);
-
 	}
 
 	/**

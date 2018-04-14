@@ -57,17 +57,14 @@ import org.xml.sax.helpers.AttributesImpl;
 public class Digester extends DefaultHandler2 {
 
 
-    // ---------------------------------------------------------- Static Fields
-    private static class SystemPropertySource
-        implements IntrospectionUtils.PropertySource {
+    private static class SystemPropertySource implements IntrospectionUtils.PropertySource {
         @Override
         public String getProperty( String key ) {
             return System.getProperty(key);
         }
     }
 
-    protected static IntrospectionUtils.PropertySource source[] =
-        new IntrospectionUtils.PropertySource[] { new SystemPropertySource() };
+    protected static IntrospectionUtils.PropertySource source[] = new IntrospectionUtils.PropertySource[] { new SystemPropertySource() };
 
     static {
         String className = System.getProperty("org.apache.tomcat.util.digester.PROPERTY_SOURCE");
@@ -91,10 +88,6 @@ public class Digester extends DefaultHandler2 {
             if (initialized) source = sources;
         }
     }
-
-
-    // --------------------------------------------------- Instance Variables
-
 
     /**
      * The body text of the current element.
@@ -1433,8 +1426,7 @@ public class Digester extends DefaultHandler2 {
 
         configure();
         getXMLReader().parse(input);
-        return (root);
-
+        return root;
     }
 
 
