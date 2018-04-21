@@ -26,6 +26,8 @@ import org.lx.tomcat.util.SystemUtil;
  *
  * @author Remy Maucherat
  * 部署的项目的映射关系类
+ * 我总觉这个class的很多方法可以缩减大量的代码，因为都是些find和remove，add的方法，这就是List这些个collection的长处啊
+ * 我想先从hosts下手改造，看着真的是太复杂了
  */
 public final class Mapper {
     private static final org.apache.juli.logging.Log log = org.apache.juli.logging.LogFactory.getLog(Mapper.class);
@@ -180,9 +182,7 @@ public final class Mapper {
      * Replace {@link MappedHost#contextList} field in <code>realHost</code> and
      * all its aliases with a new value.
      */
-    private void updateContextList(MappedHost realHost,
-            ContextList newContextList) {
-
+    private void updateContextList(MappedHost realHost, ContextList newContextList) {
         realHost.contextList = newContextList;
         for (MappedHost alias : realHost.getAliases()) {
             alias.contextList = newContextList;
@@ -205,8 +205,7 @@ public final class Mapper {
     public void addContextVersion(String hostName, Host host, String path,
             String version, Context context, String[] welcomeResources,
             WebResourceRoot resources) {
-        addContextVersion(hostName, host, path, version, context,
-                welcomeResources, resources, null);
+        addContextVersion(hostName, host, path, version, context, welcomeResources, resources, null);
     }
 
     /**
@@ -286,16 +285,12 @@ public final class Mapper {
      * @param path      Context path
      * @param version   Context version
      */
-    public void removeContextVersion(Context ctxt, String hostName,
-            String path, String version) {
-
+    public void removeContextVersion(Context ctxt, String hostName, String path, String version) {
         contextObjectToContextVersionMap.remove(ctxt);
-
         MappedHost host = exactFind(hosts, hostName);
         if (host == null || host.isAlias()) {
             return;
         }
-
         synchronized (host) {
             ContextList contextList = host.contextList;
             MappedContext context = exactFind(contextList.contexts, path);
@@ -330,11 +325,8 @@ public final class Mapper {
      * @param contextPath Context path
      * @param version   Context version
      */
-    public void pauseContextVersion(Context ctxt, String hostName,
-            String contextPath, String version) {
-
-        ContextVersion contextVersion = findContextVersion(hostName,
-                contextPath, version, true);
+    public void pauseContextVersion(Context ctxt, String hostName, String contextPath, String version) {
+        ContextVersion contextVersion = findContextVersion(hostName, contextPath, version, true);
         if (contextVersion == null || !ctxt.equals(contextVersion.object)) {
             return;
         }
@@ -342,8 +334,7 @@ public final class Mapper {
     }
 
 
-    private ContextVersion findContextVersion(String hostName,
-            String contextPath, String version, boolean silent) {
+    private ContextVersion findContextVersion(String hostName, String contextPath, String version, boolean silent) {
         MappedHost host = exactFind(hosts, hostName);
         if (host == null || host.isAlias()) {
             if (!silent) {
@@ -351,8 +342,7 @@ public final class Mapper {
             }
             return null;
         }
-        MappedContext context = exactFind(host.contextList.contexts,
-                contextPath);
+        MappedContext context = exactFind(host.contextList.contexts, contextPath);
         if (context == null) {
             if (!silent) {
                 log.error("No context found: " + contextPath);
@@ -374,8 +364,7 @@ public final class Mapper {
     public void addWrapper(String hostName, String contextPath, String version,
                            String path, Wrapper wrapper, boolean jspWildCard,
                            boolean resourceOnly) {
-        ContextVersion contextVersion = findContextVersion(hostName,
-                contextPath, version, false);
+        ContextVersion contextVersion = findContextVersion(hostName, contextPath, version, false);
         if (contextVersion == null) {
             return;
         }
@@ -384,8 +373,7 @@ public final class Mapper {
 
     public void addWrappers(String hostName, String contextPath,
             String version, Collection<WrapperMappingInfo> wrappers) {
-        ContextVersion contextVersion = findContextVersion(hostName,
-                contextPath, version, false);
+        ContextVersion contextVersion = findContextVersion(hostName, contextPath, version, false);
         if (contextVersion == null) {
             return;
         }
@@ -510,8 +498,8 @@ public final class Mapper {
                 if (removeMap(oldWrappers, newWrappers, name)) {
                     // Recalculate nesting
                     context.nesting = 0;
-                    for (int i = 0; i < newWrappers.length; i++) {
-                        int slashCount = slashCount(newWrappers[i].name);
+                    for (MappedWrapper newWrapper : newWrappers) {
+                        int slashCount = slashCount(newWrapper.name);
                         if (slashCount > context.nesting) {
                             context.nesting = slashCount;
                         }
@@ -559,10 +547,6 @@ public final class Mapper {
 
     /**
      * Add a welcome file to the given context.
-     *
-     * @param hostName
-     * @param contextPath
-     * @param welcomeFile
      */
     public void addWelcomeFile(String hostName, String contextPath,
             String version, String welcomeFile) {
@@ -581,10 +565,6 @@ public final class Mapper {
 
     /**
      * Remove a welcome file from the given context.
-     *
-     * @param hostName
-     * @param contextPath
-     * @param welcomeFile
      */
     public void removeWelcomeFile(String hostName, String contextPath,
             String version, String welcomeFile) {
@@ -615,9 +595,6 @@ public final class Mapper {
 
     /**
      * Clear the welcome files for the given context.
-     *
-     * @param hostName
-     * @param contextPath
      */
     public void clearWelcomeFiles(String hostName, String contextPath,
             String version) {
@@ -676,17 +653,10 @@ public final class Mapper {
 
     }
 
-
-    // -------------------------------------------------------- Private Methods
-
-
     /**
      * Map the specified URI.
-     * @throws IOException
      */
-    private final void internalMap(CharChunk host, CharChunk uri,
-            String version, MappingData mappingData) throws IOException {
-
+    private void internalMap(CharChunk host, CharChunk uri, String version, MappingData mappingData) throws IOException {
         if (mappingData.host != null) {
             // The legacy code (dating down at least to Tomcat 4.1) just
             // skipped all mapping work in this case. That behaviour has a risk
@@ -794,9 +764,9 @@ public final class Mapper {
      * @throws IOException if the buffers are too small to hold the results of
      *                     the mapping.
      */
-    private final void internalMapWrapper(ContextVersion contextVersion,
-                                          CharChunk path,
-                                          MappingData mappingData) throws IOException {
+    private void internalMapWrapper(ContextVersion contextVersion,
+                                    CharChunk path,
+                                    MappingData mappingData) throws IOException {
         SystemUtil.logInfo(this,"开始匹配访问的URL，映射到后端的资源上面...");
         int pathOffset = path.getOffset();
         int pathEnd = path.getEnd();
@@ -1479,7 +1449,7 @@ public final class Mapper {
         public final String name;
         public final T object;
 
-        public MapElement(String name, T object) {
+        MapElement(String name, T object) {
             this.name = name;
             this.object = object;
         }
@@ -1487,7 +1457,7 @@ public final class Mapper {
 
     protected static final class MappedHost extends MapElement<Host> {
 
-        public volatile ContextList contextList;
+        private volatile ContextList contextList;
 
         /**
          * Link to the "real" MappedHost, shared by all aliases.
@@ -1501,9 +1471,6 @@ public final class Mapper {
          */
         private final List<MappedHost> aliases;
 
-        /**
-         * Constructor used for the primary Host
-         */
         public MappedHost(String name, Host host) {
             super(name, host);
             realHost = this;
@@ -1511,9 +1478,6 @@ public final class Mapper {
             aliases = new CopyOnWriteArrayList<>();
         }
 
-        /**
-         * Constructor used for an Alias
-         */
         public MappedHost(String alias, MappedHost realHost) {
             super(alias, realHost.object);
             this.realHost = realHost;
@@ -1588,10 +1552,6 @@ public final class Mapper {
         }
     }
 
-
-    // ---------------------------------------------------- Context Inner Class
-
-
     protected static final class MappedContext extends MapElement<Void> {
         public volatile ContextVersion[] versions;
 
@@ -1631,9 +1591,6 @@ public final class Mapper {
             paused = true;
         }
     }
-
-    // ---------------------------------------------------- Wrapper Inner Class
-
 
     protected static class MappedWrapper extends MapElement<Wrapper> {
 

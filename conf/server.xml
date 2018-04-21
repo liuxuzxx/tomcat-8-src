@@ -32,9 +32,6 @@
                        prefix="localhost_access_log" suffix=".txt"
                        pattern="%h %l %u %t &quot;%r&quot; %s %b"/>
             </Host>
-
-            <Host name="liuxu" appBase="webapps" unpackWARs="true" autoDeploy="true">
-            </Host>
         </Engine>
     </Service>
 </Server>

@@ -93,9 +93,7 @@ public class MapperListener extends LifecycleMBeanBase
     public void startInternal() throws LifecycleException {
 
         setState(LifecycleState.STARTING);
-
-        @SuppressWarnings("deprecation")
-        Engine engine = (Engine) service.getContainer();
+        Engine engine = service.getContainer();
         if (engine == null) {
             return;
         }
@@ -118,9 +116,7 @@ public class MapperListener extends LifecycleMBeanBase
     @Override
     public void stopInternal() throws LifecycleException {
         setState(LifecycleState.STOPPING);
-
-        @SuppressWarnings("deprecation")
-        Engine engine = (Engine) service.getContainer();
+        Engine engine = service.getContainer();
         if (engine == null) {
             return;
         }
@@ -131,7 +127,7 @@ public class MapperListener extends LifecycleMBeanBase
     @Override
     protected String getDomainInternal() {
         if (service instanceof LifecycleMBeanBase) {
-            return ((LifecycleMBeanBase) service).getDomain();
+            return service.getDomain();
         } else {
             return null;
         }
@@ -256,13 +252,8 @@ public class MapperListener extends LifecycleMBeanBase
         }
     }
 
-
-    // ------------------------------------------------------ Protected Methods
-
     private void findDefaultHost() {
-
-        @SuppressWarnings("deprecation")
-        Engine engine = (Engine) service.getContainer();
+        Engine engine = service.getContainer();
         String defaultHost = engine.getDefaultHost();
 
         boolean found = false;

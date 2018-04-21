@@ -62,7 +62,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
     /**
      * The Container associated with this Service.
      */
-    private Container container = null;
+    private Engine container = null;
 
     private ClassLoader parentClassLoader = null;
 
@@ -80,13 +80,13 @@ public class StandardService extends LifecycleMBeanBase implements Service {
     }
 
     @Override
-    public Container getContainer() {
+    public Engine getContainer() {
         return container;
     }
 
     @Override
     public void setContainer(Container container) {
-        setContainer((Engine) container);
+        setContainer((Engine)container);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
             ((Engine) oldContainer).setService(null);
         this.container = engine;
         if (this.container != null)
-            ((Engine) this.container).setService(this);
+            this.container.setService(this);
         if (getState().isAvailable() && (this.container != null)) {
             try {
                 this.container.start();
