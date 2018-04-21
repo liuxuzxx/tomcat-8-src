@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina;
 
 import java.net.URL;
@@ -56,35 +40,30 @@ import org.apache.tomcat.util.http.CookieProcessor;
  * of Wrapper (representing individual servlet definitions).
  * <p>
  *
- * @author Craig R. McClanahan
+ * 我不是很明白的一点就是：为什么一个接口写了1700多行的代码，而且绝大部分都是get-set方法
+ * 难道这种方法也提供给外面使用，我就不相信了。
+ * 我感觉接口应该提供那些实在的方法，没必要把get-set方法提供出去。。。真是一个荒唐的接口
  */
 public interface Context extends Container, ContextBind {
-
-
-    // ----------------------------------------------------- Manifest Constants
-
     /**
      * Container event for adding a welcome file.
      */
-    public static final String ADD_WELCOME_FILE_EVENT = "addWelcomeFile";
+    String ADD_WELCOME_FILE_EVENT = "addWelcomeFile";
 
     /**
      * Container event for removing a wrapper.
      */
-    public static final String REMOVE_WELCOME_FILE_EVENT = "removeWelcomeFile";
+    String REMOVE_WELCOME_FILE_EVENT = "removeWelcomeFile";
 
     /**
      * Container event for clearing welcome files.
      */
-    public static final String  CLEAR_WELCOME_FILES_EVENT = "clearWelcomeFiles";
+    String  CLEAR_WELCOME_FILES_EVENT = "clearWelcomeFiles";
 
     /**
      * Container event for changing the ID of a session.
      */
-    public static final String CHANGE_SESSION_ID_EVENT = "changeSessionId";
-
-
-    // ------------------------------------------------------------- Properties
+    String CHANGE_SESSION_ID_EVENT = "changeSessionId";
 
     /**
      * Returns <code>true</code> if requests mapped to servlets without
@@ -94,7 +73,7 @@ public interface Context extends Container, ContextBind {
      *    "multipart config" to parse multipart/form-data requests,
      *    <code>false</code> otherwise.
      */
-    public boolean getAllowCasualMultipartParsing();
+    boolean getAllowCasualMultipartParsing();
 
 
    /**
@@ -106,7 +85,7 @@ public interface Context extends Container, ContextBind {
      * @param allowCasualMultipartParsing <code>true</code> to allow such
      *        casual parsing, <code>false</code> otherwise.
      */
-    public void setAllowCasualMultipartParsing(boolean allowCasualMultipartParsing);
+   void setAllowCasualMultipartParsing(boolean allowCasualMultipartParsing);
 
 
     /**
@@ -116,7 +95,7 @@ public interface Context extends Container, ContextBind {
      *         this web application in the order they were specified in the web
      *         application deployment descriptor
      */
-    public Object[] getApplicationEventListeners();
+    Object[] getApplicationEventListeners();
 
 
     /**
@@ -126,7 +105,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param listeners The set of instantiated listener objects.
      */
-    public void setApplicationEventListeners(Object listeners[]);
+    void setApplicationEventListeners(Object listeners[]);
 
 
     /**
@@ -136,7 +115,7 @@ public interface Context extends Container, ContextBind {
      *         for this web application in the order they were specified in the
      *         web application deployment descriptor
      */
-    public Object[] getApplicationLifecycleListeners();
+    Object[] getApplicationLifecycleListeners();
 
 
     /**
@@ -146,7 +125,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param listeners The set of instantiated listener objects.
      */
-    public void setApplicationLifecycleListeners(Object listeners[]);
+    void setApplicationLifecycleListeners(Object listeners[]);
 
 
     /**
@@ -159,7 +138,7 @@ public interface Context extends Container, ContextBind {
      *
      * @return The name of the character set to use with the given Locale
      */
-    public String getCharset(Locale locale);
+    String getCharset(Locale locale);
 
 
     /**
@@ -167,7 +146,7 @@ public interface Context extends Container, ContextBind {
      *
      * @return The URL of the XML descriptor for this context
      */
-    public URL getConfigFile();
+    URL getConfigFile();
 
 
     /**
@@ -175,7 +154,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param configFile The URL of the XML descriptor for this context.
      */
-    public void setConfigFile(URL configFile);
+    void setConfigFile(URL configFile);
 
 
     /**
@@ -184,7 +163,7 @@ public interface Context extends Container, ContextBind {
      * @return <code>true</code> if the Context has been correctly configured,
      *         otherwise <code>false</code>
      */
-    public boolean getConfigured();
+    boolean getConfigured();
 
 
     /**
@@ -194,7 +173,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param configured The new correctly configured flag
      */
-    public void setConfigured(boolean configured);
+    void setConfigured(boolean configured);
 
 
     /**
@@ -204,7 +183,7 @@ public interface Context extends Container, ContextBind {
      *         session IDs for this web application, otherwise
      *         <code>false</code>
      */
-    public boolean getCookies();
+    boolean getCookies();
 
 
     /**
@@ -212,7 +191,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param cookies The new flag
      */
-    public void setCookies(boolean cookies);
+    void setCookies(boolean cookies);
 
 
     /**
@@ -222,7 +201,7 @@ public interface Context extends Container, ContextBind {
      * @return  The value of the default session cookie name or null if not
      *          specified
      */
-    public String getSessionCookieName();
+    String getSessionCookieName();
 
 
     /**
@@ -231,7 +210,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param sessionCookieName   The name to use
      */
-    public void setSessionCookieName(String sessionCookieName);
+    void setSessionCookieName(String sessionCookieName);
 
 
     /**
@@ -240,7 +219,7 @@ public interface Context extends Container, ContextBind {
      * @return <code>true</code> if the HttpOnly flag should be set on session
      *         cookies
      */
-    public boolean getUseHttpOnly();
+    boolean getUseHttpOnly();
 
 
     /**
@@ -249,7 +228,7 @@ public interface Context extends Container, ContextBind {
      * @param useHttpOnly   Set to <code>true</code> to use HttpOnly cookies
      *                          for session cookies
      */
-    public void setUseHttpOnly(boolean useHttpOnly);
+    void setUseHttpOnly(boolean useHttpOnly);
 
 
     /**
@@ -259,7 +238,7 @@ public interface Context extends Container, ContextBind {
      * @return  The value of the default session cookie domain or null if not
      *          specified
      */
-    public String getSessionCookieDomain();
+    String getSessionCookieDomain();
 
 
     /**
@@ -268,7 +247,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param sessionCookieDomain   The domain to use
      */
-    public void setSessionCookieDomain(String sessionCookieDomain);
+    void setSessionCookieDomain(String sessionCookieDomain);
 
 
     /**
@@ -278,7 +257,7 @@ public interface Context extends Container, ContextBind {
      * @return  The value of the default session cookie path or null if not
      *          specified
      */
-    public String getSessionCookiePath();
+    String getSessionCookiePath();
 
 
     /**
@@ -287,7 +266,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param sessionCookiePath   The path to use
      */
-    public void setSessionCookiePath(String sessionCookiePath);
+    void setSessionCookiePath(String sessionCookiePath);
 
 
     /**
@@ -298,7 +277,7 @@ public interface Context extends Container, ContextBind {
      * @return <code>true</code> if the slash is added, otherwise
      *         <code>false</code>
      */
-    public boolean getSessionCookiePathUsesTrailingSlash();
+    boolean getSessionCookiePathUsesTrailingSlash();
 
 
     /**
@@ -310,7 +289,7 @@ public interface Context extends Container, ContextBind {
      *                                             slash is should be added,
      *                                             otherwise <code>false</code>
      */
-    public void setSessionCookiePathUsesTrailingSlash(
+    void setSessionCookiePathUsesTrailingSlash(
             boolean sessionCookiePathUsesTrailingSlash);
 
 
@@ -320,19 +299,19 @@ public interface Context extends Container, ContextBind {
      * @return <code>true</code> if cross-contest requests are allowed from this
      *         web applications, otherwise <code>false</code>
      */
-    public boolean getCrossContext();
+    boolean getCrossContext();
 
 
     /**
      * Return the alternate Deployment Descriptor name.
      */
-    public String getAltDDName();
+    String getAltDDName();
 
 
     /**
      * Set an alternate Deployment Descriptor name.
      */
-    public void setAltDDName(String altDDName) ;
+    void setAltDDName(String altDDName) ;
 
 
     /**
@@ -340,13 +319,13 @@ public interface Context extends Container, ContextBind {
      *
      * @param crossContext The new cross contexts flag
      */
-    public void setCrossContext(boolean crossContext);
+    void setCrossContext(boolean crossContext);
 
 
     /**
      * Return the deny-uncovered-http-methods flag for this web application.
      */
-    public boolean getDenyUncoveredHttpMethods();
+    boolean getDenyUncoveredHttpMethods();
 
 
     /**
@@ -354,13 +333,13 @@ public interface Context extends Container, ContextBind {
      *
      * @param denyUncoveredHttpMethods The new deny-uncovered-http-methods flag
      */
-    public void setDenyUncoveredHttpMethods(boolean denyUncoveredHttpMethods);
+    void setDenyUncoveredHttpMethods(boolean denyUncoveredHttpMethods);
 
 
     /**
      * Return the display name of this web application.
      */
-    public String getDisplayName();
+    String getDisplayName();
 
 
     /**
@@ -368,13 +347,13 @@ public interface Context extends Container, ContextBind {
      *
      * @param displayName The new display name
      */
-    public void setDisplayName(String displayName);
+    void setDisplayName(String displayName);
 
 
     /**
      * Return the distributable flag for this web application.
      */
-    public boolean getDistributable();
+    boolean getDistributable();
 
 
     /**
@@ -382,14 +361,14 @@ public interface Context extends Container, ContextBind {
      *
      * @param distributable The new distributable flag
      */
-    public void setDistributable(boolean distributable);
+    void setDistributable(boolean distributable);
 
 
     /**
      * Return the document root for this Context.  This can be an absolute
      * pathname, a relative pathname, or a URL.
      */
-    public String getDocBase();
+    String getDocBase();
 
 
     /**
@@ -398,19 +377,19 @@ public interface Context extends Container, ContextBind {
      *
      * @param docBase The new document root
      */
-    public void setDocBase(String docBase);
+    void setDocBase(String docBase);
 
 
     /**
      * Return the URL encoded context path, using UTF-8.
      */
-    public String getEncodedPath();
+    String getEncodedPath();
 
 
     /**
      * Return the boolean on the annotations parsing.
      */
-    public boolean getIgnoreAnnotations();
+    boolean getIgnoreAnnotations();
 
 
     /**
@@ -419,13 +398,13 @@ public interface Context extends Container, ContextBind {
      *
      * @param ignoreAnnotations The boolean on the annotations parsing
      */
-    public void setIgnoreAnnotations(boolean ignoreAnnotations);
+    void setIgnoreAnnotations(boolean ignoreAnnotations);
 
 
     /**
      * Return the login configuration descriptor for this web application.
      */
-    public LoginConfig getLoginConfig();
+    LoginConfig getLoginConfig();
 
 
     /**
@@ -433,13 +412,13 @@ public interface Context extends Container, ContextBind {
      *
      * @param config The new login configuration
      */
-    public void setLoginConfig(LoginConfig config);
+    void setLoginConfig(LoginConfig config);
 
 
     /**
      * Return the naming resources associated with this web application.
      */
-    public NamingResourcesImpl getNamingResources();
+    NamingResourcesImpl getNamingResources();
 
 
     /**

@@ -1,19 +1,3 @@
-/*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
 package org.apache.tomcat;
 
 public interface ContextBind {
@@ -39,7 +23,7 @@ public interface ContextBind {
      *         the thread context class loader in use when the method was
      *         called. If no change was made then this method returns null.
      */
-    public ClassLoader bind(boolean usePrivilegedAction, ClassLoader originalClassLoader);
+    ClassLoader bind(boolean usePrivilegedAction, ClassLoader originalClassLoader);
 
     /**
      * Restore the current thread context class loader to the original class
@@ -56,6 +40,6 @@ public interface ContextBind {
      * @param originalClassLoader
      *          The class loader to restore as the thread context class loader
      */
-    public void unbind(boolean usePrivilegedAction, ClassLoader originalClassLoader);
+    void unbind(boolean usePrivilegedAction, ClassLoader originalClassLoader);
 
 }

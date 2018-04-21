@@ -50,6 +50,7 @@ public final class Mapper {
 
     /**
      * Add a new host to the mapper.
+     * 我不明白的事情是：为什么给这个host排序，反正都是对象，就算乱了，那又怎么样，难道会影响查找的性能。。？
      *
      * @param name Virtual host name
      * @param aliases Alias names for the virtual host
@@ -73,8 +74,7 @@ public final class Mapper {
                 }
                 newHost = duplicate;
             } else {
-                log.error(sm.getString("mapper.duplicateHost", name,
-                        duplicate.getRealHostName()));
+                log.error(sm.getString("mapper.duplicateHost", name, duplicate.getRealHostName()));
                 // Do not add aliases, as removeHost(hostName) won't be able to
                 // remove them
                 return;
@@ -1228,40 +1228,40 @@ public final class Mapper {
      * given array.
      * @see #exactFind(MapElement[], String)
      */
-    private static final <T> int find(MapElement<T>[] map, String name) {
+    private static <T> int find(MapElement<T>[] map, String name) {
 
-        int a = 0;
-        int b = map.length - 1;
+        int start = 0;
+        int end = map.length - 1;
 
         // Special cases: -1 and 0
-        if (b == -1) {
+        if (end == -1) {
             return -1;
         }
 
         if (name.compareTo(map[0].name) < 0) {
             return -1;
         }
-        if (b == 0) {
+        if (end == 0) {
             return 0;
         }
 
         int i = 0;
         while (true) {
-            i = (b + a) / 2;
+            i = (end + start) / 2;
             int result = name.compareTo(map[i].name);
             if (result > 0) {
-                a = i;
+                start = i;
             } else if (result == 0) {
                 return i;
             } else {
-                b = i;
+                end = i;
             }
-            if ((b - a) == 1) {
-                int result2 = name.compareTo(map[b].name);
+            if ((end - start) == 1) {
+                int result2 = name.compareTo(map[end].name);
                 if (result2 < 0) {
-                    return a;
+                    return start;
                 } else {
-                    return b;
+                    return end;
                 }
             }
         }
@@ -1398,21 +1398,18 @@ public final class Mapper {
                 break;
             }
         }
-
-        return (pos);
-
+        return pos;
     }
 
 
     /**
      * Find the position of the nth slash, in the given char chunk.
      */
-    private static final int nthSlash(CharChunk name, int n) {
+    private static int nthSlash(CharChunk name, int n) {
 
         char[] c = name.getBuffer();
         int end = name.getEnd();
-        int start = name.getStart();
-        int pos = start;
+        int pos = name.getStart();
         int count = 0;
 
         while (pos < end) {
@@ -1430,7 +1427,7 @@ public final class Mapper {
     /**
      * Return the slash count in a given string.
      */
-    private static final int slashCount(String name) {
+    private static int slashCount(String name) {
         int pos = -1;
         int count = 0;
         while ((pos = name.indexOf('/', pos + 1)) != -1) {
@@ -1443,8 +1440,9 @@ public final class Mapper {
     /**
      * Insert into the right place in a sorted MapElement array, and prevent
      * duplicates.
+     * 我感觉作者使用了一个很垃圾的自己写代码的cpp的轮子形式
      */
-    private static final <T> boolean insertMap
+    private static <T> boolean insertMap
         (MapElement<T>[] oldMap, MapElement<T>[] newMap, MapElement<T> newElement) {
         int pos = find(oldMap, newElement.name);
         if ((pos != -1) && (newElement.name.equals(oldMap[pos].name))) {
@@ -1473,6 +1471,9 @@ public final class Mapper {
         return false;
     }
 
+    /**
+     * 就是一个Key是String ,Value是T范型的东西而已
+     */
     protected abstract static class MapElement<T> {
 
         public final String name;
@@ -1548,9 +1549,6 @@ public final class Mapper {
             aliases.remove(alias);
         }
     }
-
-
-    // ------------------------------------------------ ContextList Inner Class
 
 
     protected static final class ContextList {

@@ -24,16 +24,16 @@
         <Connector port="9528" protocol="AJP/1.3" redirectPort="8443"/>
         <Engine name="Catalina" defaultHost="localhost">
             <Realm className="org.apache.catalina.realm.LockOutRealm">
-                <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
-                       resourceName="UserDatabase"/>
+                <Realm className="org.apache.catalina.realm.UserDatabaseRealm" resourceName="UserDatabase"/>
             </Realm>
 
-            <Host name="localhost" appBase="webapps"
-                  unpackWARs="true" autoDeploy="true">
+            <Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="true">
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                        prefix="localhost_access_log" suffix=".txt"
                        pattern="%h %l %u %t &quot;%r&quot; %s %b"/>
+            </Host>
 
+            <Host name="liuxu" appBase="webapps" unpackWARs="true" autoDeploy="true">
             </Host>
         </Engine>
     </Service>
