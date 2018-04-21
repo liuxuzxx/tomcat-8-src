@@ -91,18 +91,30 @@ public class StandardService extends LifecycleMBeanBase implements Service {
 
     @Override
     public void setContainer(Engine engine) {
-        Container oldContainer = this.container;
-        if ((oldContainer != null) && (oldContainer instanceof Engine))
-            ((Engine) oldContainer).setService(null);
+        Engine oldContainer = closeOldEngine();
+
         this.container = engine;
-        if (this.container != null)
+        if (null != this.container) {
             this.container.setService(this);
+        }
         if (getState().isAvailable() && (this.container != null)) {
             try {
                 this.container.start();
             } catch (LifecycleException e) {
                 // Ignore
             }
+        }
+
+
+        // Report this property change to interested listeners
+        support.firePropertyChange("container", oldContainer, this.container);
+
+    }
+
+    private Engine closeOldEngine() {
+        Engine oldContainer = this.container;
+        if (null != oldContainer) {
+            oldContainer.setService(null);
         }
         if (getState().isAvailable() && (oldContainer != null)) {
             try {
@@ -111,10 +123,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
                 // Ignore
             }
         }
-
-        // Report this property change to interested listeners
-        support.firePropertyChange("container", oldContainer, this.container);
-
+        return oldContainer;
     }
 
     @Override
