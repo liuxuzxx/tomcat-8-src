@@ -52,14 +52,11 @@ import org.xml.sax.SAXParseException;
  * 继续拿Catalina开刀,这次是：解剖这个战斗机
  */
 public class Catalina {
-
     protected static final StringManager sm = StringManager.getManager(Constants.Package);
-
     /**
      * Use await.
      */
     protected boolean await = false;
-
     /**
      * Pathname to the server configuration file.
      */
@@ -69,31 +66,25 @@ public class Catalina {
      * The shared extensions class loader for this server.
      */
     protected ClassLoader parentClassLoader = Catalina.class.getClassLoader();
-
-
     /**
      * The server component we are starting or stopping.
      */
     protected Server server = null;
-
 
     /**
      * Use shutdown hook flag.
      */
     protected boolean useShutdownHook = true;
 
-
     /**
      * Shutdown hook.
      */
     protected Thread shutdownHook = null;
 
-
     /**
      * Is naming enabled ?
      */
     protected boolean useNaming = true;
-
 
     public Catalina() {
         setSecurityProtection();
@@ -179,30 +170,27 @@ public class Catalina {
      * @param args Command line arguments to process
      */
     protected boolean arguments(String args[]) {
-
         boolean isConfig = false;
-
         if (args.length < 1) {
             usage();
             return false;
         }
-
-        for (int i = 0; i < args.length; i++) {
+        for(String arg : args) {
             if (isConfig) {
-                configFile = args[i];
+                configFile = arg;
                 isConfig = false;
-            } else if (args[i].equals("-config")) {
+            } else if (arg.equals("-config")) {
                 isConfig = true;
-            } else if (args[i].equals("-nonaming")) {
+            } else if (arg.equals("-nonaming")) {
                 setUseNaming(false);
-            } else if (args[i].equals("-help")) {
+            } else if (arg.equals("-help")) {
                 usage();
                 return false;
-            } else if (args[i].equals("start")) {
+            } else if (arg.equals("start")) {
                 // NOOP
-            } else if (args[i].equals("configtest")) {
+            } else if (arg.equals("configtest")) {
                 // NOOP
-            } else if (args[i].equals("stop")) {
+            } else if (arg.equals("stop")) {
                 // NOOP
             } else {
                 usage();
@@ -646,7 +634,6 @@ public class Catalina {
      * Print usage information for this application.
      */
     protected void usage() {
-
         System.out.println
             ("usage: java org.apache.catalina.startup.Catalina"
                 + " [ -config {pathname} ]"
@@ -696,7 +683,6 @@ public class Catalina {
         }
     }
 
-
     /**
      * Set the security package access/protection.
      */
@@ -712,7 +698,6 @@ public class Catalina {
      * tomcat喜欢使用一个线程作为内部类进而可以操作一些事情，很方便，感觉是专属这个的内部线程类.
      */
     protected class CatalinaShutdownHook extends Thread {
-
         @Override
         public void run() {
             try {
