@@ -59,7 +59,7 @@ public abstract class LifecycleBase implements Lifecycle {
     }
 
     /**
-     * 从 new--->initializing-->initalized 这个生命过程
+     * 从 new--->initializing-->initialized 这个生命过程
      * 而且看代码好像是对进入这个函数进行了一个状态的检查，如果不是new直接抛出异常信息
      */
     @Override
