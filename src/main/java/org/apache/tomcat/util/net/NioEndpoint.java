@@ -86,7 +86,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private ServerSocketChannel serverSock = null;
 
     /**
-     * use send file
+     * use send file 这代码也有单词错误啊
      */
     private boolean useSendfile = true;
 
@@ -94,7 +94,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
      * The size of the OOM parachute.
      */
     /**
-     * 为什么不写这个1048576=1024*1024，就是告诉我们这个是1024个字节，就是lG，这个就是人家的代码
+     * 为什么不写这个1048576=1024*1024，就是告诉我们这个是1024个字节，就是1G，这个就是人家的代码
      * 写的好的，代码本身就是注释，你写一个1048576，鬼知道是什么，是多少
      */
     private int oomParachute = 1024 * 1024;
@@ -106,6 +106,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     /**
      * Make sure this string has already been allocated parachute:降落伞，种子降落
+     * 我其实很纳闷啊，这个不是老外的项目吗，怎么出现了汉字的提示信息，让我很奇怪
      */
     private static final String oomParachuteMsg = "SEVERE:内存不够用, parachute is non existent, 系统启动失败.";
 
@@ -586,18 +587,18 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                 SystemUtil.logInfo(this, "查看SSL上下文的信息内容：", JSONObject.toJSONString(sslContext));
                 if (sslContext != null) {
                     SSLEngine engine = createSSLEngine();
-                    int appbufsize = engine.getSession().getApplicationBufferSize();
-                    NioBufferHandler bufhandler = new NioBufferHandler(
-                            Math.max(appbufsize, socketProperties.getAppReadBufSize()),
-                            Math.max(appbufsize, socketProperties.getAppWriteBufSize()),
+                    int appBufferSize = engine.getSession().getApplicationBufferSize();
+                    NioBufferHandler bufferHandler = new NioBufferHandler(
+                            Math.max(appBufferSize, socketProperties.getAppReadBufSize()),
+                            Math.max(appBufferSize, socketProperties.getAppWriteBufSize()),
                             socketProperties.getDirectBuffer());
-                    channel = new SecureNioChannel(socket, engine, bufhandler, selectorPool);
+                    channel = new SecureNioChannel(socket, engine, bufferHandler, selectorPool);
                 } else {
                     // normal tcp setup
-                    NioBufferHandler bufhandler = new NioBufferHandler(socketProperties.getAppReadBufSize(),
+                    NioBufferHandler bufferHandler = new NioBufferHandler(socketProperties.getAppReadBufSize(),
                             socketProperties.getAppWriteBufSize(), socketProperties.getDirectBuffer());
 
-                    channel = new NioChannel(socket, bufhandler);
+                    channel = new NioChannel(socket, bufferHandler);
                 }
             } else {
                 channel.setIOChannel(socket);
