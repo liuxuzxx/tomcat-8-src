@@ -79,14 +79,10 @@ public abstract class AbstractEndpoint<S> {
     /**
      * 从网上的搜索可以看出来，似乎就是这个acceptor进行了一个socket的接待，其实就是一个
      * ServerSocket的一个accept的方法的一个代理封装吧，反正基本的accept就是这么操作的
-     *
-     * @author liuxu
      */
     public abstract static class Acceptor implements Runnable {
         /**
          * 其实enum是常量定义的一个选择方式
-         *
-         * @author liuxu
          */
         public enum AcceptorState {
             NEW, RUNNING, PAUSED, ENDED
