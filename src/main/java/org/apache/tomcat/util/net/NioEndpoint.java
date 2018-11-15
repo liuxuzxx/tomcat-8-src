@@ -2,6 +2,7 @@
 package org.apache.tomcat.util.net;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.ExceptionUtils;
@@ -18,6 +19,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.X509KeyManager;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,66 +56,25 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * When switching to Java 5, there's an opportunity to use the virtual machine's
  * thread pool.
- *
- * @author Mladen Turk
- * @author Remy Maucherat
- */
-
-/**
+ * 本来还是用JVM自带的虚拟机好，总是版本的适应和兼容让代码和逻辑变得很臃肿
  * 这个Nio，我是略微的了解一下就是这个：channel<----->buffer的一个交流，其实就是io的一个使用，但是
  * 二者的不同点就是Nio是不堵塞的，但是io是堵塞的
- *
- * @author liuxu
- *         好像是并没有使用什么Http11EndPoint这个实现类，就是使用了这个类，但是也没有给出来什么提示
- *         如果按照我们的想法应该是Http11EndPoint：但是为什么不使用啊，这个是一个问题
+ * 好像是并没有使用什么Http11EndPoint这个实现类，就是使用了这个类，但是也没有给出来什么提示
+ * 如果按照我们的想法应该是Http11EndPoint：但是为什么不使用啊，这个是一个问题
  */
 public class NioEndpoint extends AbstractEndpoint<NioChannel> {
-
-    // -------------------------------------------------------------- Constants
-
     private static final Log log = LogFactory.getLog(NioEndpoint.class);
-
     public static final int OP_REGISTER = 0x100; // register interest op
-    /**
-     * 这个就是的大家风范啊，人家不使用的时候自己就会进行一个注解掉，这样子，我们的代码的健壮性和迷惑性 才不会太高
-     */
-
     private NioSelectorPool selectorPool = new NioSelectorPool();
-
-    /**
-     * Server socket "pointer".
-     */
     private ServerSocketChannel serverSock = null;
-
-    /**
-     * use send file 这代码也有单词错误啊
-     */
     private boolean useSendfile = true;
-
-    /**
-     * The size of the OOM parachute.
-     */
-    /**
-     * 为什么不写这个1048576=1024*1024，就是告诉我们这个是1024个字节，就是1G，这个就是人家的代码
-     * 写的好的，代码本身就是注释，你写一个1048576，鬼知道是什么，是多少
-     */
     private int oomParachute = 1024 * 1024;
-    /**
-     * The oom parachute, when an OOM error happens, will release the data,
-     * giving the JVM instantly a chunk of data to be able to recover with.
-     */
     private byte[] oomParachuteData = null;
-
     /**
      * Make sure this string has already been allocated parachute:降落伞，种子降落
      * 我其实很纳闷啊，这个不是老外的项目吗，怎么出现了汉字的提示信息，让我很奇怪
      */
     private static final String oomParachuteMsg = "SEVERE:内存不够用, parachute is non existent, 系统启动失败.";
-
-    /**
-     * Keep track of OOM warning messages.
-     * System.currentTimeMillis();:获取系统的毫秒，这个是一个不错的方法，
-     */
     private long lastParachuteCheck = System.currentTimeMillis();
 
     /**
@@ -123,27 +84,12 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
      */
     private volatile CountDownLatch stopLatch = null;
 
-    /**
-     * Cache for SocketProcessor objects
-     */
     private SynchronizedStack<SocketProcessor> processorCache;
 
-    /**
-     * Cache for poller events
-     */
     private SynchronizedStack<PollerEvent> eventCache;
 
-    /**
-     * Bytebuffer cache, each channel holds a set of buffers (two, except for
-     * SSL holds four)
-     */
     private SynchronizedStack<NioChannel> nioChannels;
 
-    // ------------------------------------------------------------- Properties
-
-    /**
-     * Generic properties, introspected
-     */
     @Override
     public boolean setProperty(String name, String value) {
         /**
@@ -163,9 +109,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    /**
-     * Priority of the poller threads.
-     */
     private int pollerThreadPriority = Thread.NORM_PRIORITY;
 
     public void setPollerThreadPriority(int pollerThreadPriority) {
@@ -176,9 +119,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return pollerThreadPriority;
     }
 
-    /**
-     * Handling of accepted sockets.
-     */
     private Handler handler = null;
 
     public void setHandler(Handler handler) {
@@ -189,9 +129,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return handler;
     }
 
-    /**
-     * Allow comet request handling.
-     */
     private boolean useComet = true;
 
     public void setUseComet(boolean useComet) {
@@ -213,9 +150,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return true;
     } // Always supported
 
-    /**
-     * Poller thread count.
-     */
     private int pollerThreadCount = Math.min(2, Runtime.getRuntime().availableProcessors());
 
     public void setPollerThreadCount(int pollerThreadCount) {
@@ -236,14 +170,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return this.selectorTimeout;
     }
 
-    /**
-     * The socket poller.
-     */
     private Poller[] pollers = null;
     private AtomicInteger pollerRotater = new AtomicInteger(0);
 
     /**
-     * Return an available poller in true round robin fashion
      * 这种轮询方式不就是一种最简单的hash算法嘛，使用abs是必要的，因为当轮询次数多了，
      * 很可能出现负数
      */
@@ -321,9 +251,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return enabledCiphers;
     }
 
-    // --------------------------------------------------------- OOM Parachute
-    // Methods
-
     protected void checkParachute() {
         boolean para = reclaimParachute(false);
         if (!para && (System.currentTimeMillis() - lastParachuteCheck) > 10000) {
@@ -353,11 +280,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     }
 
-    // --------------------------------------------------------- Public Methods
-
-    /**
-     * Number of keepalive sockets.
-     */
     public int getKeepAliveCount() {
         if (pollers == null) {
             return 0;
@@ -370,12 +292,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    // ----------------------------------------------- Public Lifecycle Methods
-
-    /**
-     * Initialize the endpoint.
-     * 初始化一下ServerSocketChannel和对应的线程的个数以及SSL访问的设置
-     */
     @Override
     public void bind() throws Exception {
         SystemUtil.logInfo(this, "开始初始化ServerSocketChannel对象，以及初始化对应的服务线程进行服务...");
@@ -440,9 +356,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return result;
     }
 
-    /**
-     * Start the NIO endpoint, creating acceptor, poller threads.
-     */
     @Override
     public void startInternal() throws Exception {
 
@@ -468,11 +381,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    /**
-     * 给他抽出出来一个函数
-     *
-     * @throws IOException IO异常，这个异常也能随便抛出去。。。
-     */
     private void startPollerThreads() throws IOException {
         pollers = new Poller[getPollerThreadCount()];
         for (int i = 0; i < pollers.length; i++) {
@@ -514,9 +422,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     }
 
-    /**
-     * Deallocate NIO memory pools, and close server socket.
-     */
     @Override
     public void unbind() throws Exception {
         if (log.isDebugEnabled()) {
@@ -536,8 +441,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             log.debug("Destroy completed for " + new InetSocketAddress(getAddress(), getPort()));
         }
     }
-
-    // ------------------------------------------------------ Protected Methods
 
     public int getWriteBufSize() {
         return socketProperties.getTxBufSize();
@@ -569,9 +472,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return new Acceptor();
     }
 
-    /**
-     * Process the specified connection.
-     */
     protected boolean setSocketOptions(SocketChannel socket) {
         // Process the connection
         try {
@@ -645,11 +545,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return engine;
     }
 
-    /**
-     * Returns true if a worker thread is available for processing.
-     *
-     * @return boolean
-     */
     protected boolean isWorkerAvailable() {
         return true;
     }
@@ -692,8 +587,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     protected Log getLog() {
         return log;
     }
-
-    // --------------------------------------------------- Acceptor Inner Class
 
     /**
      * The background thread that listens for incoming TCP/IP connections and
@@ -862,9 +755,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    // ----------------------------------------------------- Poller Inner
-    // Classes
-
     /**
      * PollerEvent, cacheable object for poller events to avoid GC
      * 看PollerEvent，也就是这个循环事件的class，好像只是就是给Poller使用的，没看到其他地方使用这个类
@@ -940,9 +830,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    /**
-     * Poller class. Poller:是轮循的意思，不是什么民意调查。
-     */
     public class Poller implements Runnable {
 
         private Selector selector;
@@ -1471,8 +1358,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    // ----------------------------------------------------- Key Attachment
-    // Class
     public static class KeyAttachment extends SocketWrapper<NioChannel> {
         private Poller poller = null;
         private int interestOps = 0;
@@ -1583,8 +1468,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     }
 
-    // ------------------------------------------------ Application Buffer
-    // Handler
     public static class NioBufferHandler implements ApplicationBufferHandler {
         private ByteBuffer readbuf = null;
         private ByteBuffer writebuf = null;
@@ -1616,13 +1499,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     }
 
-    // ------------------------------------------------ Handler Inner Interface
-
-    /**
-     * Bare bones interface used for socket processing. Per thread data is to be
-     * stored in the ThreadWithAttributes extra folders, or alternately in
-     * thread local fields.
-     */
     public interface Handler extends AbstractEndpoint.Handler {
         SocketState process(SocketWrapper<NioChannel> socket, SocketStatus status);
 
@@ -1632,9 +1508,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
         SSLImplementation getSslImplementation();
     }
-
-    // ---------------------------------------------- SocketProcessor Inner
-    // Class
 
     /**
      * This class is the equivalent of the Worker, but will simply use in an
@@ -1800,12 +1673,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    // ----------------------------------------------- SendfileData Inner Class
-
-    /**
-     * SendfileData class.
-     * 感觉写这个NioEndpoint的作者是不是c++出身啊，代码的格式明显就是c++的代码结构模式
-     */
     public static class SendfileData {
         // File
         public volatile String fileName;

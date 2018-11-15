@@ -14,6 +14,7 @@ import java.nio.channels.AsynchronousSocketChannel;
  * and are currently only working for the Nio connector
  * 设置的一些Socket的配置信息内容，可以设置四种形式的Socket
  * Socket ServerSocket AsynchronousSocketChannel AsynchronousServerSocketChannel
+ * 就是设置Socket的配置信息
  */
 public class SocketProperties {
     /**
