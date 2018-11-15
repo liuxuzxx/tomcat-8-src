@@ -29,6 +29,7 @@ import org.apache.tomcat.util.threads.TaskQueue;
 import org.apache.tomcat.util.threads.TaskThreadFactory;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.lx.tomcat.util.SystemUtil;
+
 /**
  * 还好只有1K行的代码，以前自己对200行的代码都会感觉这么多，现在是对1K行的代码，感觉，都是没有什么的 就是这么的任性啊
  * 作者也没有写这个抽象类的注释，这让我可是好找啊，不过，对于这个前台传递过来的信息都是这个是幕后主导者
@@ -43,32 +44,12 @@ public abstract class AbstractEndpoint<S> {
     protected static final StringManager sm = StringManager.getManager("org.apache.tomcat.util.net.res");
 
     public interface Handler {
-        /**
-         * Different types of socket states to react upon.
-         */
-        /**
-         * 其实枚举类型才是一种定义常量的好方式 我以前是对这个enum的认识不够深刻，所以，导致这个使用上面很少
-         * 不过，我现在的认识就是：其实他就像是一个class一样子，也是一种东西
-         * 比如说，我可以定义：class、interface、enum这三种（我目前只能想清楚这三种）
-         * 这就是我们读取源代码的好处，可以涉足到我们工作用不到的地方，但是，一个地方，你么有涉足过
-         * 那么，我们就没有使用的权限，熟悉是使用的前提，所以，必须熟悉这个领域的东西，
-         *
-         * @author liuxu
-         */
         enum SocketState {
-            // TODO Add a new state to the AsyncStateMachine and remove
-            // ASYNC_END (if possible)
             OPEN, CLOSED, LONG, ASYNC_END, SENDFILE, UPGRADING, UPGRADED
         }
 
-        /**
-         * Obtain the GlobalRequestProcessor associated with the handler.
-         */
         Object getGlobal();
 
-        /**
-         * Recycle resources associated with the handler.
-         */
         void recycle();
     }
 
@@ -76,14 +57,7 @@ public abstract class AbstractEndpoint<S> {
         UNBOUND, BOUND_ON_INIT, BOUND_ON_START
     }
 
-    /**
-     * 从网上的搜索可以看出来，似乎就是这个acceptor进行了一个socket的接待，其实就是一个
-     * ServerSocket的一个accept的方法的一个代理封装吧，反正基本的accept就是这么操作的
-     */
     public abstract static class Acceptor implements Runnable {
-        /**
-         * 其实enum是常量定义的一个选择方式
-         */
         public enum AcceptorState {
             NEW, RUNNING, PAUSED, ENDED
         }
@@ -96,13 +70,6 @@ public abstract class AbstractEndpoint<S> {
 
         private String threadName;
 
-        /**
-         * 这个权限的限制不错啊，只要是这个abstract的类，那么肯定是会被继承实现的，所以啊，这个不需要改变的
-         * 方法，一定给一个final的修饰，不然，你知道这些个用户都是什么人啊，有些人就是喜欢更改，真是有病
-         * 但是，规则是限制人们行为的一个圈，人们都喜欢好奇和出圈
-         *
-         * @param threadName
-         */
         protected final void setThreadName(final String threadName) {
             this.threadName = threadName;
         }
@@ -115,41 +82,24 @@ public abstract class AbstractEndpoint<S> {
     private static final int INITIAL_ERROR_DELAY = 50;
     private static final int MAX_ERROR_DELAY = 1600;
 
-    /**
-     * Async timeout thread
-     * 不清楚，为什么还要来个同步时间的线程，目的是为了什么啊。。
-     */
+
     protected class AsyncTimeout implements Runnable {
 
-        /**
-         * 看看这个boolean的变量的名字的定义，真是一种美国风味的命名格式 完全是美帝资本主义的命名方式
-         * 基本上volatile 这个修饰符，修饰的基本上都是boolean了，就是一个标志值.
-         * 但是话又说回来，调用一个正在运行的线程对象的其他方法，到底好不好啊。。
-         * 但是，不调用，又没有办法进行信息的传递。
-         */
         private volatile boolean asyncTimeoutRunning = true;
 
-        /**
-         * The background thread that checks async requests and fires the
-         * timeout if there has been no activity.
-         */
+
         @Override
         public void run() {
-
-            // Loop until we receive a shutdown command
             while (asyncTimeoutRunning) {
                 rest();
                 long now = System.currentTimeMillis();
                 for (SocketWrapper<S> socket : waitingRequests) {
                     long access = socket.getLastAccess();
                     if (socket.getTimeout() > 0 && (now - access) > socket.getTimeout()) {
-                        // Prevent multiple timeouts
                         socket.setTimeout(-1);
                         processSocket(socket, SocketStatus.TIMEOUT, true);
                     }
                 }
-
-                // Loop if endpoint is paused
                 while (paused && asyncTimeoutRunning) {
                     rest();
                 }
@@ -161,9 +111,6 @@ public abstract class AbstractEndpoint<S> {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                /**
-                 * 又是一个ignore的异常信息，从来不是打印出来这个异常信息， 严重的鄙视printStackTrace的方式
-                 */
             }
         }
 
@@ -172,52 +119,35 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    // ----------------------------------------------------------------- Fields
-
-    /**
-     * Running state of the endpoint.
-     * 这个endpoint的状态信息
-     */
     protected volatile boolean running = false;
-
-    /**
-     * Will be set to true whenever the endpoint is paused.
-     */
     protected volatile boolean paused = false;
-
-    /**
-     * Are we using an internal executor
-     */
     protected volatile boolean internalExecutor = false;
-
-    /**
-     * counter for nr of connections handled by an endpoint
-     */
     private volatile LimitLatch connectionLimitLatch = null;
-
-    /**
-     * Socket properties
-     */
     protected SocketProperties socketProperties = new SocketProperties();
+    protected Acceptor[] acceptors;
+    private long executorTerminationTimeoutMillis = 5000;
+    protected int acceptorThreadCount = 0;
+    protected int acceptorThreadPriority = Thread.NORM_PRIORITY;
+    private int maxConnections = 10000;
+    private Executor executor = null;
+    private int port;
+    private InetAddress address;
+    private int backlog = 100;
+    private boolean bindOnInit = true;
+    private BindState bindState = BindState.UNBOUND;
+    private Integer keepAliveTimeout = null;
+    private int maxKeepAliveRequests = 100;
+    private int maxHeaderCount = 100;
+    private String name = "TP";
+    private boolean SSLEnabled = false;
+    private int minSpareThreads = 10;
+    private int maxThreads = 200;
+    private boolean daemon = true;
+    protected int threadPriority = Thread.NORM_PRIORITY;
 
     public SocketProperties getSocketProperties() {
         return socketProperties;
     }
-
-    /**
-     * Threads used to accept new connections and pass them to worker threads.
-     * 这种其实没有必要使用线程池。因为个数是确定的，线程池是很耗费资源的
-     */
-    protected Acceptor[] acceptors;
-
-    // -----------------------------------------------------------------
-    // Properties
-
-    /**
-     * Time to wait for the internal executor (if used) to terminate when the
-     * endpoint is stopped in milliseconds. Defaults to 5000 (5 seconds).
-     */
-    private long executorTerminationTimeoutMillis = 5000;
 
     public long getExecutorTerminationTimeoutMillis() {
         return executorTerminationTimeoutMillis;
@@ -227,11 +157,6 @@ public abstract class AbstractEndpoint<S> {
         this.executorTerminationTimeoutMillis = executorTerminationTimeoutMillis;
     }
 
-    /**
-     * Acceptor thread count.
-     */
-    protected int acceptorThreadCount = 0;
-
     public void setAcceptorThreadCount(int acceptorThreadCount) {
         this.acceptorThreadCount = acceptorThreadCount;
     }
@@ -239,11 +164,6 @@ public abstract class AbstractEndpoint<S> {
     public int getAcceptorThreadCount() {
         return acceptorThreadCount;
     }
-
-    /**
-     * Priority of the acceptor threads.
-     */
-    protected int acceptorThreadPriority = Thread.NORM_PRIORITY;
 
     public void setAcceptorThreadPriority(int acceptorThreadPriority) {
         this.acceptorThreadPriority = acceptorThreadPriority;
@@ -253,16 +173,10 @@ public abstract class AbstractEndpoint<S> {
         return acceptorThreadPriority;
     }
 
-    private int maxConnections = 10000;
-
-    /**
-     * 在线程启动前的黑夜，请初始化好你们的同步变量的对象，要不然没机会了.
-     */
     public void setMaxConnections(int maxCon) {
         this.maxConnections = maxCon;
         LimitLatch latch = this.connectionLimitLatch;
         if (latch != null) {
-            // Update the latch that enforces this
             if (maxCon == -1) {
                 releaseConnectionLatch();
             } else {
@@ -277,21 +191,6 @@ public abstract class AbstractEndpoint<S> {
         return this.maxConnections;
     }
 
-    /**
-     * Return the current count of connections handled by this endpoint, if the
-     * connections are counted (which happens when the maximum count of
-     * connections is limited), or <code>-1</code> if they are not. This
-     * property is added here so that this value can be inspected through JMX.
-     * It is visible on "ThreadPool" MBean.
-     * <p>
-     * <p>
-     * The count is incremented by the Acceptor before it tries to accept a new
-     * connection. Until the limit is reached and thus the count cannot be
-     * incremented, this value is more by 1 (the count of acceptors) than the
-     * actual count of connections that are being served.
-     *
-     * @return The count
-     */
     public long getConnectionCount() {
         LimitLatch latch = connectionLimitLatch;
         if (latch != null) {
@@ -300,21 +199,6 @@ public abstract class AbstractEndpoint<S> {
         return -1;
     }
 
-    /**
-     * External Executor based thread pool. External:外部，外面的意思，
-     * 这个是tomcat的使用的外部的线程池，这个线程池其实就是一个接口，就是通过Executors的方法获取的一个接口
-     * 应该是有人写好了这个实现，这样子，我们就可以使用java自带的jdk的线程池就行了
-     */
-    private Executor executor = null;
-
-    /**
-     * 这个是tomcat进行一个线程池的选择的一个过程，就是说，我们的tomcat在获取浏览器或者是说的更加准确一点
-     * 就是客户端，发送的请求信息的时候，肯定是使用socket进行一个接触以后，就使用线程池进行一个处理工作
-     * 但是，根据面向过程的编码原则，这个线程池怎么实现是一个问题。
-     * tomcat的方案是，：使用java自带的jdk环境的线程池，和自己写线程池，但是，这个tomcat似乎有这个spring
-     * 的影子在里面，或者是说spring是受这个tomcat的影响导致的，反正是都是那种可以配置的东西，
-     * 所以，这个外部的线程池就是用户自己配置的，可以提供给你选择处理这个socket
-     */
     public void setExecutor(Executor executor) {
         this.executor = executor;
         this.internalExecutor = (executor == null);
@@ -323,11 +207,6 @@ public abstract class AbstractEndpoint<S> {
     public Executor getExecutor() {
         return executor;
     }
-
-    /**
-     * Server socket port.
-     */
-    private int port;
 
     public int getPort() {
         return port;
@@ -339,11 +218,6 @@ public abstract class AbstractEndpoint<S> {
 
     public abstract int getLocalPort();
 
-    /**
-     * Address for the server socket.
-     */
-    private InetAddress address;
-
     public InetAddress getAddress() {
         return address;
     }
@@ -351,15 +225,6 @@ public abstract class AbstractEndpoint<S> {
     public void setAddress(InetAddress address) {
         this.address = address;
     }
-
-    /**
-     * Allows the server developer to specify the backlog that should be used
-     * for server sockets. By default, this value is 100.
-     * 这个其实是java的socket编程：就是说，这个socket是客户端，但是这个服务器端是：ServerSocket，但是这个客户端之恩那个
-     * 只能发送一个请求，但是服务器端就需要接受多个请求，这个时候，我们需要进行一个操作就是：给一个队列，让他们等着
-     * 但是，如果排队的超过100了，是不是说，客户端的请求就不会发送过来了。。？
-     */
-    private int backlog = 100;
 
     public void setBacklog(int backlog) {
         if (backlog > 0)
@@ -370,14 +235,6 @@ public abstract class AbstractEndpoint<S> {
         return backlog;
     }
 
-    /**
-     * Controls when the Endpoint binds the port. <code>true</code>, the default
-     * binds the port on {@link #init()} and unbinds it on {@link #destroy()}.
-     * If set to <code>false</code> the port is bound on {@link #start()} and
-     * unbound on {@link #stop()}.
-     */
-    private boolean bindOnInit = true;
-
     public boolean getBindOnInit() {
         return bindOnInit;
     }
@@ -385,13 +242,6 @@ public abstract class AbstractEndpoint<S> {
     public void setBindOnInit(boolean b) {
         this.bindOnInit = b;
     }
-
-    private BindState bindState = BindState.UNBOUND;
-
-    /**
-     * Keepalive timeout, if not set the soTimeout is used.
-     */
-    private Integer keepAliveTimeout = null;
 
     public int getKeepAliveTimeout() {
         if (keepAliveTimeout == null) {
@@ -405,9 +255,6 @@ public abstract class AbstractEndpoint<S> {
         this.keepAliveTimeout = Integer.valueOf(keepAliveTimeout);
     }
 
-    /**
-     * Socket TCP no delay.
-     */
     public boolean getTcpNoDelay() {
         return socketProperties.getTcpNoDelay();
     }
@@ -416,9 +263,6 @@ public abstract class AbstractEndpoint<S> {
         socketProperties.setTcpNoDelay(tcpNoDelay);
     }
 
-    /**
-     * Socket linger.
-     */
     public int getSoLinger() {
         return socketProperties.getSoLingerTime();
     }
@@ -428,9 +272,6 @@ public abstract class AbstractEndpoint<S> {
         socketProperties.setSoLingerOn(soLinger >= 0);
     }
 
-    /**
-     * Socket timeout.
-     */
     public int getSoTimeout() {
         return socketProperties.getSoTimeout();
     }
@@ -439,11 +280,6 @@ public abstract class AbstractEndpoint<S> {
         socketProperties.setSoTimeout(soTimeout);
     }
 
-    /**
-     * SSL engine.
-     */
-    private boolean SSLEnabled = false;
-
     public boolean isSSLEnabled() {
         return SSLEnabled;
     }
@@ -451,8 +287,6 @@ public abstract class AbstractEndpoint<S> {
     public void setSSLEnabled(boolean SSLEnabled) {
         this.SSLEnabled = SSLEnabled;
     }
-
-    private int minSpareThreads = 10;
 
     public int getMinSpareThreads() {
         return Math.min(minSpareThreads, getMaxThreads());
@@ -469,11 +303,6 @@ public abstract class AbstractEndpoint<S> {
             }
         }
     }
-
-    /**
-     * Maximum amount of worker threads.
-     */
-    private int maxThreads = 200;
 
     public void setMaxThreads(int maxThreads) {
         this.maxThreads = maxThreads;
@@ -506,11 +335,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * Max keep alive requests
-     */
-    private int maxKeepAliveRequests = 100; // as in Apache HTTPD server
-
     public int getMaxKeepAliveRequests() {
         return maxKeepAliveRequests;
     }
@@ -518,12 +342,6 @@ public abstract class AbstractEndpoint<S> {
     public void setMaxKeepAliveRequests(int maxKeepAliveRequests) {
         this.maxKeepAliveRequests = maxKeepAliveRequests;
     }
-
-    /**
-     * The maximum number of headers in a request that are allowed. 100 by
-     * default. A value of less than 0 means no limit.
-     */
-    private int maxHeaderCount = 100; // as in Apache HTTPD server
 
     public int getMaxHeaderCount() {
         return maxHeaderCount;
@@ -533,11 +351,6 @@ public abstract class AbstractEndpoint<S> {
         this.maxHeaderCount = maxHeaderCount;
     }
 
-    /**
-     * Name of the thread pool, which will be used for naming child threads.
-     */
-    private String name = "TP";
-
     public void setName(String name) {
         this.name = name;
     }
@@ -546,13 +359,6 @@ public abstract class AbstractEndpoint<S> {
         return name;
     }
 
-    /**
-     * The default is true - the created threads will be in daemon mode. If set
-     * to false, the control thread will not be daemon - and will keep the
-     * process alive.
-     */
-    private boolean daemon = true;
-
     public void setDaemon(boolean b) {
         daemon = b;
     }
@@ -560,11 +366,6 @@ public abstract class AbstractEndpoint<S> {
     public boolean getDaemon() {
         return daemon;
     }
-
-    /**
-     * Priority of the worker threads.
-     */
-    protected int threadPriority = Thread.NORM_PRIORITY;
 
     public void setThreadPriority(int threadPriority) {
         this.threadPriority = threadPriority;
@@ -576,22 +377,8 @@ public abstract class AbstractEndpoint<S> {
 
     protected abstract boolean getDeferAccept();
 
-    /**
-     * Attributes provide a way for configuration to be passed to sub-components
-     * without the {@link org.apache.coyote.ProtocolHandler} being aware of the
-     * properties available on those sub-components. One example of such a
-     * sub-component is the
-     * {@link org.apache.tomcat.util.net.ServerSocketFactory}.
-     */
     protected HashMap<String, Object> attributes = new HashMap<>();
 
-    /**
-     * Generic property setter called when a property for which a specific
-     * setter already exists within the
-     * {@link org.apache.coyote.ProtocolHandler} needs to be made available to
-     * sub-components. The specific setter will call this method to populate the
-     * attributes.
-     */
     public void setAttribute(String name, Object value) {
         if (getLog().isTraceEnabled()) {
             getLog().trace(sm.getString("endpoint.setAttribute", name, value));
@@ -599,9 +386,6 @@ public abstract class AbstractEndpoint<S> {
         attributes.put(name, value);
     }
 
-    /**
-     * Used by sub-components to retrieve configuration information.
-     */
     public Object getAttribute(String key) {
         Object value = attributes.get(key);
         if (getLog().isTraceEnabled()) {
@@ -629,11 +413,6 @@ public abstract class AbstractEndpoint<S> {
         return (String) getAttribute(name);
     }
 
-    /**
-     * Return the amount of threads that are managed by the pool.
-     *
-     * @return the amount of threads that are managed by the pool
-     */
     public int getCurrentThreadCount() {
         Executor executor = this.executor;
         if (executor != null) {
@@ -649,11 +428,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * Return the amount of threads that are in use
-     *
-     * @return the amount of threads that are in use
-     */
     public int getCurrentThreadsBusy() {
         Executor executor = this.executor;
         if (executor != null) {
@@ -677,9 +451,6 @@ public abstract class AbstractEndpoint<S> {
         return paused;
     }
 
-    /**
-     * 如果用户没有使用外部的线程池，那么对不起这个我们的用户要使用这个内部的线程池了，估计是很高效率的
-     */
     public void createExecutor() {
         internalExecutor = true;
         TaskQueue taskqueue = new TaskQueue();
@@ -713,9 +484,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * Unlock the server socket accept using a bogus connection.
-     */
     protected void unlockAccept() {
         // Only try to unlock the acceptor if it is necessary
         boolean unlockRequired = false;
@@ -784,17 +552,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    // ---------------------------------------------- Request processing methods
-
-    /**
-     * Process the given SocketWrapper with the given status. Used to trigger
-     * processing as if the Poller (for those endpoints that have one) selected
-     * the socket.
-     *
-     * @param socketWrapper The socket wrapper to process
-     * @param socketStatus  The input status to the processing
-     * @param dispatch      Should the processing be performed on a new container thread
-     */
     public abstract void processSocket(SocketWrapper<S> socketWrapper, SocketStatus socketStatus, boolean dispatch);
 
     public void executeNonBlockingDispatches(SocketWrapper<S> socketWrapper) {
@@ -825,15 +582,6 @@ public abstract class AbstractEndpoint<S> {
             }
         }
     }
-
-    // ------------------------------------------------------- Lifecycle methods
-
-    /*
-     * NOTE: There is no maintenance of state or checking for valid transitions
-     * within this class other than ensuring that bind/unbind are called in the
-     * right place. It is expected that the calling code will maintain state and
-     * prevent invalid state transitions.
-     */
 
     public abstract void bind() throws Exception;
 
@@ -889,14 +637,8 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * Hook to allow Endpoints to provide a specific Acceptor implementation.
-     */
     protected abstract Acceptor createAcceptor();
 
-    /**
-     * Pause the endpoint, which will stop it accepting new connections.
-     */
     public void pause() {
         if (running && !paused) {
             paused = true;
@@ -904,10 +646,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * Resume the endpoint, which will make it start accepting new connections
-     * again.
-     */
     public void resume() {
         if (running) {
             paused = false;
@@ -931,9 +669,6 @@ public abstract class AbstractEndpoint<S> {
 
     protected abstract Log getLog();
 
-    // Flags to indicate optional feature support
-    // Some of these are always hard-coded, some are hard-coded to false (i.e.
-    // the endpoint does not support them) and some are configurable.
     public abstract boolean getUseSendfile();
 
     public abstract boolean getUseComet();
@@ -958,13 +693,6 @@ public abstract class AbstractEndpoint<S> {
         connectionLimitLatch = null;
     }
 
-    /**
-     * 这个函数好像就是tomcat能一次性处理的线程数了。
-     * 通过这个函数的分析，可以看出来如果maxConnections没有进行设置，那么就是对线程个数没有任何限制
-     * 但是系统资源会压制我们的个数，我觉得还是限制点的好。
-     * 当然如果设置了总数限制，那么就使用LimitLatch这个类进行统计就好了，这个是线程安全的，请放心使用。
-     * 换句话来说，如果这个maxConnections的数值是-1的情况下，tomcat就不会限制，不会让这个当前的线程阻塞
-     */
     protected void countUpOrAwaitConnection() throws InterruptedException {
         if (maxConnections == -1)
             return;
@@ -987,16 +715,6 @@ public abstract class AbstractEndpoint<S> {
             return -1;
     }
 
-    /**
-     * Provides a common approach for sub-classes to handle exceptions where a
-     * delay is required to prevent a Thread from entering a tight loop which
-     * will consume CPU and may also trigger large amounts of logging. For
-     * example, this can happen with the Acceptor thread if the ulimit for open
-     * files is reached.
-     *
-     * @param currentErrorDelay The current delay being applied on failure
-     * @return The delay to apply on the next failure
-     */
     protected int handleExceptionWithDelay(int currentErrorDelay) {
         // Don't delay on first exception
         if (currentErrorDelay > 0) {
@@ -1018,8 +736,6 @@ public abstract class AbstractEndpoint<S> {
         }
 
     }
-
-    // -------------------- SSL related properties --------------------
 
     private String algorithm = KeyManagerFactory.getDefaultAlgorithm();
 
@@ -1101,9 +817,6 @@ public abstract class AbstractEndpoint<S> {
         ciphers = s;
     }
 
-    /**
-     * @return The ciphers in use by this Endpoint
-     */
     public abstract String[] getCiphersUsed();
 
     private String useServerCipherSuitesOrder = "";
@@ -1274,10 +987,6 @@ public abstract class AbstractEndpoint<S> {
         waitingRequests.remove(socketWrapper);
     }
 
-    /**
-     * Configures SSLEngine to honor cipher suites ordering based upon endpoint
-     * configuration.
-     */
     protected void configureUseServerCipherSuitesOrder(SSLEngine engine) {
         String useServerCipherSuitesOrderStr = this.getUseServerCipherSuitesOrder().trim();
 
@@ -1312,9 +1021,6 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    /**
-     * The async timeout thread.
-     */
     private AsyncTimeout asyncTimeout = null;
 
     public AsyncTimeout getAsyncTimeout() {

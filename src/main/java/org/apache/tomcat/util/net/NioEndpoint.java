@@ -1,24 +1,4 @@
-
 package org.apache.tomcat.util.net;
-
-import com.alibaba.fastjson.JSONObject;
-
-import org.apache.juli.logging.Log;
-import org.apache.juli.logging.LogFactory;
-import org.apache.tomcat.util.ExceptionUtils;
-import org.apache.tomcat.util.IntrospectionUtils;
-import org.apache.tomcat.util.collections.SynchronizedQueue;
-import org.apache.tomcat.util.collections.SynchronizedStack;
-import org.apache.tomcat.util.net.AbstractEndpoint.Handler.SocketState;
-import org.apache.tomcat.util.net.SecureNioChannel.ApplicationBufferHandler;
-import org.apache.tomcat.util.net.jsse.NioX509KeyManager;
-import org.lx.tomcat.util.SystemUtil;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSessionContext;
-import javax.net.ssl.X509KeyManager;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +26,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSessionContext;
+import javax.net.ssl.X509KeyManager;
+
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+import org.apache.tomcat.util.ExceptionUtils;
+import org.apache.tomcat.util.IntrospectionUtils;
+import org.apache.tomcat.util.collections.SynchronizedQueue;
+import org.apache.tomcat.util.collections.SynchronizedStack;
+import org.apache.tomcat.util.net.AbstractEndpoint.Handler.SocketState;
+import org.apache.tomcat.util.net.SecureNioChannel.ApplicationBufferHandler;
+import org.apache.tomcat.util.net.jsse.NioX509KeyManager;
+import org.lx.tomcat.util.SystemUtil;
+
+import com.alibaba.fastjson.JSONObject;
+
 /**
  * NIO tailored thread pool, providing the following services:
  * <ul>
@@ -64,30 +63,17 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private static final Log log = LogFactory.getLog(NioEndpoint.class);
-    public static final int OP_REGISTER = 0x100; // register interest op
+    public static final int OP_REGISTER = 0x100;
     private NioSelectorPool selectorPool = new NioSelectorPool();
     private ServerSocketChannel serverSock = null;
     private boolean useSendfile = true;
     private int oomParachute = 1024 * 1024;
     private byte[] oomParachuteData = null;
-    /**
-     * Make sure this string has already been allocated parachute:降落伞，种子降落
-     * 我其实很纳闷啊，这个不是老外的项目吗，怎么出现了汉字的提示信息，让我很奇怪
-     */
     private static final String oomParachuteMsg = "SEVERE:内存不够用, parachute is non existent, 系统启动失败.";
     private long lastParachuteCheck = System.currentTimeMillis();
-
-    /**
-     * 对于volatile修饰的变量，jvm虚拟机只是保证从主内存加载到线程工作内存的值是最新的
-     * 这个是volatile关键字最好的解释，就是说，你每次去拿都是最新的，但是，你自己保证一份，
-     * 这个和一般的变量使用是不一样子的，原因是：一般的变量都是原地修改的，不是自己copy一份的
-     */
     private volatile CountDownLatch stopLatch = null;
-
     private SynchronizedStack<SocketProcessor> processorCache;
-
     private SynchronizedStack<PollerEvent> eventCache;
-
     private SynchronizedStack<NioChannel> nioChannels;
 
     @Override
@@ -596,15 +582,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
      */
     protected class Acceptor extends AbstractEndpoint.Acceptor {
 
-        /**
-         * 看这个run方法的书写，真的是这个if-else满眼都是这个东西，这个东西真的是很多啊，
-         * 这么优秀的程序员做程序也是很多if-else吗，真的是，也许是最好的办法解决这个办法和方案
-         * 从这个调试的角度来看，似乎这个Acceptor是在这个tomcat启动的时候启动的，
-         * 也就是说，这个是在整个项目启动的时候就会启动进行一个线程的启动 之后是进入daemon守护神模式，这样子就可以持续的接受客户端的请求了
-         * 这种睡眠之后，当你醒来的时候，确实需要检查一下状态，才能进行下一步的操作
-         * 要不然，你也不知道你睡眠的这50ms，系统发生了，理论上来说会发生一切。难道
-         * 就没有其他很好的方案可以替换吗？
-         */
         @Override
         public void run() {
             SystemUtil.printInfo(this, "Acceptor线程启动了，可以接受客户端的请求了");
