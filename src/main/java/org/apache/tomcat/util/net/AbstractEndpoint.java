@@ -63,7 +63,7 @@ public abstract class AbstractEndpoint<S> {
     protected int threadPriority = Thread.NORM_PRIORITY;
     private String algorithm = KeyManagerFactory.getDefaultAlgorithm();
     private String[] sslEnabledProtocolsarr = new String[0];
-    protected final Set<SocketWrapper<S>> waitingRequests = Collections.newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
+    protected final Set<SocketWrapper<S>> waitingRequests = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private AsyncTimeout asyncTimeout = null;
     private String sessionTimeout = "86400";
     private String clientAuth = "false";
@@ -208,7 +208,7 @@ public abstract class AbstractEndpoint<S> {
     }
 
     public void setKeepAliveTimeout(int keepAliveTimeout) {
-        this.keepAliveTimeout = Integer.valueOf(keepAliveTimeout);
+        this.keepAliveTimeout = keepAliveTimeout;
     }
 
     public boolean getTcpNoDelay() {
