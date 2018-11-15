@@ -30,95 +30,12 @@ import org.apache.tomcat.util.threads.TaskThreadFactory;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.lx.tomcat.util.SystemUtil;
 
-/**
- * 还好只有1K行的代码，以前自己对200行的代码都会感觉这么多，现在是对1K行的代码，感觉，都是没有什么的 就是这么的任性啊
- * 作者也没有写这个抽象类的注释，这让我可是好找啊，不过，对于这个前台传递过来的信息都是这个是幕后主导者
- *
- * @param <S>
- * @author liuxu
- */
 public abstract class AbstractEndpoint<S> {
 
     protected static final String DEFAULT_CIPHERS = "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5";
-
     protected static final StringManager sm = StringManager.getManager("org.apache.tomcat.util.net.res");
-
-    public interface Handler {
-        enum SocketState {
-            OPEN, CLOSED, LONG, ASYNC_END, SENDFILE, UPGRADING, UPGRADED
-        }
-
-        Object getGlobal();
-
-        void recycle();
-    }
-
-    protected enum BindState {
-        UNBOUND, BOUND_ON_INIT, BOUND_ON_START
-    }
-
-    public abstract static class Acceptor implements Runnable {
-        public enum AcceptorState {
-            NEW, RUNNING, PAUSED, ENDED
-        }
-
-        protected volatile AcceptorState state = AcceptorState.NEW;
-
-        public final AcceptorState getState() {
-            return state;
-        }
-
-        private String threadName;
-
-        protected final void setThreadName(final String threadName) {
-            this.threadName = threadName;
-        }
-
-        protected final String getThreadName() {
-            return threadName;
-        }
-    }
-
     private static final int INITIAL_ERROR_DELAY = 50;
     private static final int MAX_ERROR_DELAY = 1600;
-
-
-    protected class AsyncTimeout implements Runnable {
-
-        private volatile boolean asyncTimeoutRunning = true;
-
-
-        @Override
-        public void run() {
-            while (asyncTimeoutRunning) {
-                rest();
-                long now = System.currentTimeMillis();
-                for (SocketWrapper<S> socket : waitingRequests) {
-                    long access = socket.getLastAccess();
-                    if (socket.getTimeout() > 0 && (now - access) > socket.getTimeout()) {
-                        socket.setTimeout(-1);
-                        processSocket(socket, SocketStatus.TIMEOUT, true);
-                    }
-                }
-                while (paused && asyncTimeoutRunning) {
-                    rest();
-                }
-
-            }
-        }
-
-        private void rest() {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
-        }
-
-        protected void stop() {
-            asyncTimeoutRunning = false;
-        }
-    }
-
     protected volatile boolean running = false;
     protected volatile boolean paused = false;
     protected volatile boolean internalExecutor = false;
@@ -144,6 +61,45 @@ public abstract class AbstractEndpoint<S> {
     private int maxThreads = 200;
     private boolean daemon = true;
     protected int threadPriority = Thread.NORM_PRIORITY;
+    private String algorithm = KeyManagerFactory.getDefaultAlgorithm();
+    private String[] sslEnabledProtocolsarr = new String[0];
+    protected final Set<SocketWrapper<S>> waitingRequests = Collections.newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
+    private AsyncTimeout asyncTimeout = null;
+    private String sessionTimeout = "86400";
+    private String clientAuth = "false";
+    private String allowUnsafeLegacyRenegotiation = null;
+    private String sessionCacheSize = null;
+    private String keystoreFile = System.getProperty("user.home") + "/.keystore";
+    private String trustMaxCertLength = null;
+    private String crlFile = null;
+    private String trustManagerClassName = null;
+    private String keystorePass = null;
+    private String keystoreType = "JKS";
+    private String keystoreProvider = null;
+    private String sslProtocol = Constants.SSL_PROTO_TLS;
+    private String ciphers = DEFAULT_CIPHERS;
+    private String useServerCipherSuitesOrder = "";
+    private String keyAlias = null;
+    private String keyPass = null;
+    private String truststoreFile = System.getProperty("javax.net.ssl.trustStore");
+    private String truststorePass = System.getProperty("javax.net.ssl.trustStorePassword");
+    private String truststoreType = System.getProperty("javax.net.ssl.trustStoreType");
+    private String truststoreProvider = null;
+    private String truststoreAlgorithm = null;
+
+    public interface Handler {
+        enum SocketState {
+            OPEN, CLOSED, LONG, ASYNC_END, SENDFILE, UPGRADING, UPGRADED
+        }
+
+        Object getGlobal();
+
+        void recycle();
+    }
+
+    protected enum BindState {
+        UNBOUND, BOUND_ON_INIT, BOUND_ON_START
+    }
 
     public SocketProperties getSocketProperties() {
         return socketProperties;
@@ -464,7 +420,6 @@ public abstract class AbstractEndpoint<S> {
         if (executor != null && internalExecutor) {
             this.executor = null;
             if (executor instanceof ThreadPoolExecutor) {
-                // this is our internal one, so we need to shut it down
                 ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
                 tpe.shutdownNow();
                 long timeout = getExecutorTerminationTimeoutMillis();
@@ -472,7 +427,6 @@ public abstract class AbstractEndpoint<S> {
                     try {
                         tpe.awaitTermination(timeout, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
-                        // Ignore
                     }
                     if (tpe.isTerminating()) {
                         getLog().warn(sm.getString("endpoint.warn.executorShutdown", getName()));
@@ -485,7 +439,6 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected void unlockAccept() {
-        // Only try to unlock the acceptor if it is necessary
         boolean unlockRequired = false;
         for (Acceptor acceptor : acceptors) {
             if (acceptor.getState() == AcceptorState.RUNNING) {
@@ -499,7 +452,6 @@ public abstract class AbstractEndpoint<S> {
 
         InetSocketAddress saddr = null;
         try {
-            // Need to create a connection to unlock the accept();
             if (address == null) {
                 saddr = new InetSocketAddress("localhost", getLocalPort());
             } else {
@@ -513,21 +465,13 @@ public abstract class AbstractEndpoint<S> {
                 if (getSocketProperties().getUnlockTimeout() > utmo)
                     utmo = getSocketProperties().getUnlockTimeout();
                 s.setSoTimeout(stmo);
-                // TODO Consider hard-coding to s.setSoLinger(true,0)
                 s.setSoLinger(getSocketProperties().getSoLingerOn(), getSocketProperties().getSoLingerTime());
                 if (getLog().isDebugEnabled()) {
                     getLog().debug("About to unlock socket for:" + saddr);
                 }
                 s.connect(saddr, utmo);
                 if (getDeferAccept()) {
-                    /*
-                     * In the case of a deferred accept / accept filters we need
-                     * to send data to wake up the accept. Send OPTIONS * to
-                     * bypass even BSD accept filters. The Acceptor will discard
-                     * it.
-                     */
                     OutputStreamWriter sw;
-
                     sw = new OutputStreamWriter(s.getOutputStream(), "ISO-8859-1");
                     sw.write("OPTIONS * HTTP/1.0\r\n" + "User-Agent: Tomcat wakeup connection\r\n\r\n");
                     sw.flush();
@@ -535,8 +479,6 @@ public abstract class AbstractEndpoint<S> {
                 if (getLog().isDebugEnabled()) {
                     getLog().debug("Socket unlock completed for:" + saddr);
                 }
-
-                // Wait for upto 1000ms acceptor threads to unlock
                 long waitLeft = 1000;
                 for (Acceptor acceptor : acceptors) {
                     while (waitLeft > 0 && acceptor.getState() == AcceptorState.RUNNING) {
@@ -555,24 +497,6 @@ public abstract class AbstractEndpoint<S> {
     public abstract void processSocket(SocketWrapper<S> socketWrapper, SocketStatus socketStatus, boolean dispatch);
 
     public void executeNonBlockingDispatches(SocketWrapper<S> socketWrapper) {
-        /*
-         * This method is called when non-blocking IO is initiated by defining a
-         * read and/or write listener in a non-container thread. It is called
-         * once the non-container thread completes so that the first calls to
-         * onWritePossible() and/or onDataAvailable() as appropriate are made by
-         * the container.
-         *
-         * Processing the dispatches requires (for BIO and APR/native at least)
-         * that the socket has been added to the waitingRequests queue. This may
-         * not have occurred by the time that the non-container thread completes
-         * triggering the call to this method. Therefore, the coded syncs on the
-         * SocketWrapper as the container thread that initiated this
-         * non-container thread holds a lock on the SocketWrapper. The container
-         * thread will add the socket to the waitingRequests queue before
-         * releasing the lock on the socketWrapper. Therefore, by obtaining the
-         * lock on socketWrapper before processing the dispatches, we can be
-         * sure that the socket has been added to the waitingRequests queue.
-         */
         synchronized (socketWrapper) {
             Iterator<DispatchType> dispatches = socketWrapper.getIteratorAndClearDispatches();
 
@@ -600,11 +524,8 @@ public abstract class AbstractEndpoint<S> {
     }
 
     private void testServerCipherSuitesOrderSupport() {
-        // Only test this feature if the user explicitly requested its use.
         if (!"".equals(getUseServerCipherSuitesOrder().trim())) {
             try {
-                // This method is only available in Java 8+
-                // Check to see if the method exists, and then call it.
                 SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
             } catch (NoSuchMethodException nsme) {
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
@@ -716,17 +637,13 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected int handleExceptionWithDelay(int currentErrorDelay) {
-        // Don't delay on first exception
         if (currentErrorDelay > 0) {
             try {
                 Thread.sleep(currentErrorDelay);
             } catch (InterruptedException e) {
-                // Ignore
             }
         }
 
-        // On subsequent exceptions, start the delay at 50ms, doubling the delay
-        // on every subsequent exception until the delay reaches 1.6 seconds.
         if (currentErrorDelay == 0) {
             return INITIAL_ERROR_DELAY;
         } else if (currentErrorDelay < MAX_ERROR_DELAY) {
@@ -737,8 +654,6 @@ public abstract class AbstractEndpoint<S> {
 
     }
 
-    private String algorithm = KeyManagerFactory.getDefaultAlgorithm();
-
     public String getAlgorithm() {
         return algorithm;
     }
@@ -746,8 +661,6 @@ public abstract class AbstractEndpoint<S> {
     public void setAlgorithm(String s) {
         this.algorithm = s;
     }
-
-    private String clientAuth = "false";
 
     public String getClientAuth() {
         return clientAuth;
@@ -757,8 +670,6 @@ public abstract class AbstractEndpoint<S> {
         this.clientAuth = s;
     }
 
-    private String keystoreFile = System.getProperty("user.home") + "/.keystore";
-
     public String getKeystoreFile() {
         return keystoreFile;
     }
@@ -766,8 +677,6 @@ public abstract class AbstractEndpoint<S> {
     public void setKeystoreFile(String s) {
         keystoreFile = s;
     }
-
-    private String keystorePass = null;
 
     public String getKeystorePass() {
         return keystorePass;
@@ -777,8 +686,6 @@ public abstract class AbstractEndpoint<S> {
         this.keystorePass = s;
     }
 
-    private String keystoreType = "JKS";
-
     public String getKeystoreType() {
         return keystoreType;
     }
@@ -786,8 +693,6 @@ public abstract class AbstractEndpoint<S> {
     public void setKeystoreType(String s) {
         this.keystoreType = s;
     }
-
-    private String keystoreProvider = null;
 
     public String getKeystoreProvider() {
         return keystoreProvider;
@@ -797,8 +702,6 @@ public abstract class AbstractEndpoint<S> {
         this.keystoreProvider = s;
     }
 
-    private String sslProtocol = Constants.SSL_PROTO_TLS;
-
     public String getSslProtocol() {
         return sslProtocol;
     }
@@ -806,8 +709,6 @@ public abstract class AbstractEndpoint<S> {
     public void setSslProtocol(String s) {
         sslProtocol = s;
     }
-
-    private String ciphers = DEFAULT_CIPHERS;
 
     public String getCiphers() {
         return ciphers;
@@ -819,8 +720,6 @@ public abstract class AbstractEndpoint<S> {
 
     public abstract String[] getCiphersUsed();
 
-    private String useServerCipherSuitesOrder = "";
-
     public String getUseServerCipherSuitesOrder() {
         return useServerCipherSuitesOrder;
     }
@@ -828,8 +727,6 @@ public abstract class AbstractEndpoint<S> {
     public void setUseServerCipherSuitesOrder(String s) {
         this.useServerCipherSuitesOrder = s;
     }
-
-    private String keyAlias = null;
 
     public String getKeyAlias() {
         return keyAlias;
@@ -839,8 +736,6 @@ public abstract class AbstractEndpoint<S> {
         keyAlias = s;
     }
 
-    private String keyPass = null;
-
     public String getKeyPass() {
         return keyPass;
     }
@@ -848,8 +743,6 @@ public abstract class AbstractEndpoint<S> {
     public void setKeyPass(String s) {
         this.keyPass = s;
     }
-
-    private String truststoreFile = System.getProperty("javax.net.ssl.trustStore");
 
     public String getTruststoreFile() {
         return truststoreFile;
@@ -859,8 +752,6 @@ public abstract class AbstractEndpoint<S> {
         truststoreFile = s;
     }
 
-    private String truststorePass = System.getProperty("javax.net.ssl.trustStorePassword");
-
     public String getTruststorePass() {
         return truststorePass;
     }
@@ -868,8 +759,6 @@ public abstract class AbstractEndpoint<S> {
     public void setTruststorePass(String truststorePass) {
         this.truststorePass = truststorePass;
     }
-
-    private String truststoreType = System.getProperty("javax.net.ssl.trustStoreType");
 
     public String getTruststoreType() {
         return truststoreType;
@@ -879,8 +768,6 @@ public abstract class AbstractEndpoint<S> {
         this.truststoreType = truststoreType;
     }
 
-    private String truststoreProvider = null;
-
     public String getTruststoreProvider() {
         return truststoreProvider;
     }
@@ -888,8 +775,6 @@ public abstract class AbstractEndpoint<S> {
     public void setTruststoreProvider(String truststoreProvider) {
         this.truststoreProvider = truststoreProvider;
     }
-
-    private String truststoreAlgorithm = null;
 
     public String getTruststoreAlgorithm() {
         return truststoreAlgorithm;
@@ -899,8 +784,6 @@ public abstract class AbstractEndpoint<S> {
         this.truststoreAlgorithm = truststoreAlgorithm;
     }
 
-    private String trustManagerClassName = null;
-
     public String getTrustManagerClassName() {
         return trustManagerClassName;
     }
@@ -908,8 +791,6 @@ public abstract class AbstractEndpoint<S> {
     public void setTrustManagerClassName(String trustManagerClassName) {
         this.trustManagerClassName = trustManagerClassName;
     }
-
-    private String crlFile = null;
 
     public String getCrlFile() {
         return crlFile;
@@ -919,8 +800,6 @@ public abstract class AbstractEndpoint<S> {
         this.crlFile = crlFile;
     }
 
-    private String trustMaxCertLength = null;
-
     public String getTrustMaxCertLength() {
         return trustMaxCertLength;
     }
@@ -928,8 +807,6 @@ public abstract class AbstractEndpoint<S> {
     public void setTrustMaxCertLength(String trustMaxCertLength) {
         this.trustMaxCertLength = trustMaxCertLength;
     }
-
-    private String sessionCacheSize = null;
 
     public String getSessionCacheSize() {
         return sessionCacheSize;
@@ -939,8 +816,6 @@ public abstract class AbstractEndpoint<S> {
         sessionCacheSize = s;
     }
 
-    private String sessionTimeout = "86400";
-
     public String getSessionTimeout() {
         return sessionTimeout;
     }
@@ -949,8 +824,6 @@ public abstract class AbstractEndpoint<S> {
         sessionTimeout = s;
     }
 
-    private String allowUnsafeLegacyRenegotiation = null;
-
     public String getAllowUnsafeLegacyRenegotiation() {
         return allowUnsafeLegacyRenegotiation;
     }
@@ -958,8 +831,6 @@ public abstract class AbstractEndpoint<S> {
     public void setAllowUnsafeLegacyRenegotiation(String s) {
         allowUnsafeLegacyRenegotiation = s;
     }
-
-    private String[] sslEnabledProtocolsarr = new String[0];
 
     public String[] getSslEnabledProtocolsArray() {
         return this.sslEnabledProtocolsarr;
@@ -981,47 +852,34 @@ public abstract class AbstractEndpoint<S> {
         }
     }
 
-    protected final Set<SocketWrapper<S>> waitingRequests = Collections.newSetFromMap(new ConcurrentHashMap<SocketWrapper<S>, Boolean>());
-
     public void removeWaitingRequest(SocketWrapper<S> socketWrapper) {
         waitingRequests.remove(socketWrapper);
     }
 
     protected void configureUseServerCipherSuitesOrder(SSLEngine engine) {
         String useServerCipherSuitesOrderStr = this.getUseServerCipherSuitesOrder().trim();
-
-        // Only use this feature if the user explicitly requested its use.
         if (!"".equals(useServerCipherSuitesOrderStr)) {
             SSLParameters sslParameters = engine.getSSLParameters();
             boolean useServerCipherSuitesOrder = ("true".equalsIgnoreCase(useServerCipherSuitesOrderStr)
                     || "yes".equalsIgnoreCase(useServerCipherSuitesOrderStr));
-
             try {
-                // This method is only available in Java 8+
-                // Check to see if the method exists, and then call it.
                 Method m = SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
-
                 m.invoke(sslParameters, Boolean.valueOf(useServerCipherSuitesOrder));
             } catch (NoSuchMethodException nsme) {
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
                         nsme);
             } catch (InvocationTargetException ite) {
-                // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
                         ite);
             } catch (IllegalArgumentException iae) {
-                // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
                         iae);
             } catch (IllegalAccessException e) {
-                // Should not happen
                 throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"), e);
             }
             engine.setSSLParameters(sslParameters);
         }
     }
-
-    private AsyncTimeout asyncTimeout = null;
 
     public AsyncTimeout getAsyncTimeout() {
         return asyncTimeout;
@@ -1029,5 +887,59 @@ public abstract class AbstractEndpoint<S> {
 
     public void setAsyncTimeout(AsyncTimeout asyncTimeout) {
         this.asyncTimeout = asyncTimeout;
+    }
+
+    protected class AsyncTimeout implements Runnable {
+        private volatile boolean asyncTimeoutRunning = true;
+
+        @Override
+        public void run() {
+            while (asyncTimeoutRunning) {
+                rest();
+                long now = System.currentTimeMillis();
+                for (SocketWrapper<S> socket : waitingRequests) {
+                    long access = socket.getLastAccess();
+                    if (socket.getTimeout() > 0 && (now - access) > socket.getTimeout()) {
+                        socket.setTimeout(-1);
+                        processSocket(socket, SocketStatus.TIMEOUT, true);
+                    }
+                }
+                while (paused && asyncTimeoutRunning) {
+                    rest();
+                }
+
+            }
+        }
+
+        private void rest() {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
+        }
+
+        protected void stop() {
+            asyncTimeoutRunning = false;
+        }
+    }
+
+    public abstract static class Acceptor implements Runnable {
+        protected volatile AcceptorState state = AcceptorState.NEW;
+        private String threadName;
+
+        public enum AcceptorState {
+            NEW, RUNNING, PAUSED, ENDED
+        }
+        public final AcceptorState getState() {
+            return state;
+        }
+
+        protected final void setThreadName(final String threadName) {
+            this.threadName = threadName;
+        }
+
+        protected final String getThreadName() {
+            return threadName;
+        }
     }
 }
