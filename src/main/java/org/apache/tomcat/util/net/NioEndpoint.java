@@ -47,14 +47,10 @@ import com.alibaba.fastjson.JSONObject;
 
 /**
  * NIO tailored thread pool, providing the following services:
- * <ul>
- * <li>Socket acceptor thread</li>
- * <li>Socket poller thread</li>
- * <li>Worker threads pool</li>
- * </ul>
- * <p>
- * When switching to Java 5, there's an opportunity to use the virtual machine's
- * thread pool.
+ * Socket acceptor thread
+ * Socket poller thread
+ * Worker threads pool
+ * When switching to Java 5, there's an opportunity to use the virtual machine's thread pool.
  * 本来还是用JVM自带的虚拟机好，总是版本的适应和兼容让代码和逻辑变得很臃肿
  * 这个Nio，我是略微的了解一下就是这个：channel<----->buffer的一个交流，其实就是io的一个使用，但是
  * 二者的不同点就是Nio是不堵塞的，但是io是堵塞的
@@ -75,6 +71,15 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private SynchronizedStack<SocketProcessor> processorCache;
     private SynchronizedStack<PollerEvent> eventCache;
     private SynchronizedStack<NioChannel> nioChannels;
+    private Handler handler = null;
+    private boolean useComet = true;
+    private int pollerThreadCount = Math.min(2, Runtime.getRuntime().availableProcessors());
+    private long selectorTimeout = 1000;
+    private Poller[] pollers = null;
+    private AtomicInteger pollerRotater = new AtomicInteger(0);
+    private SSLContext sslContext = null;
+    private String[] enabledCiphers;
+    private String[] enabledProtocols;
 
     @Override
     public boolean setProperty(String name, String value) {
@@ -105,8 +110,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return pollerThreadPriority;
     }
 
-    private Handler handler = null;
-
     public void setHandler(Handler handler) {
         this.handler = handler;
     }
@@ -114,8 +117,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     public Handler getHandler() {
         return handler;
     }
-
-    private boolean useComet = true;
 
     public void setUseComet(boolean useComet) {
         this.useComet = useComet;
@@ -136,8 +137,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return true;
     } // Always supported
 
-    private int pollerThreadCount = Math.min(2, Runtime.getRuntime().availableProcessors());
-
     public void setPollerThreadCount(int pollerThreadCount) {
         this.pollerThreadCount = pollerThreadCount;
     }
@@ -145,8 +144,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     public int getPollerThreadCount() {
         return pollerThreadCount;
     }
-
-    private long selectorTimeout = 1000;
 
     public void setSelectorTimeout(long timeout) {
         this.selectorTimeout = timeout;
@@ -156,13 +153,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return this.selectorTimeout;
     }
 
-    private Poller[] pollers = null;
-    private AtomicInteger pollerRotater = new AtomicInteger(0);
-
-    /**
-     * 这种轮询方式不就是一种最简单的hash算法嘛，使用abs是必要的，因为当轮询次数多了，
-     * 很可能出现负数
-     */
     public Poller getPoller0() {
         int idx = Math.abs(pollerRotater.incrementAndGet()) % pollers.length;
         return pollers[idx];
@@ -180,9 +170,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         this.useSendfile = useSendfile;
     }
 
-    /**
-     * Is deferAccept supported?
-     */
     @Override
     public boolean getDeferAccept() {
         // Not supported
@@ -197,8 +184,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         this.oomParachuteData = oomParachuteData;
     }
 
-    private SSLContext sslContext = null;
-
     public SSLContext getSSLContext() {
         return sslContext;
     }
@@ -207,12 +192,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         sslContext = c;
     }
 
-    private String[] enabledCiphers;
-    private String[] enabledProtocols;
-
-    /**
-     * Port in use.
-     */
     @Override
     public int getLocalPort() {
         /**
@@ -378,9 +357,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    /**
-     * Stop the endpoint. This will cause all processing threads to stop.
-     */
     @Override
     public void stopInternal() {
         releaseConnectionLatch();
@@ -675,11 +651,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             }
         }
 
-        /**
-         * 装填服务端获取的SocketChannel到Selector当中去
-         *
-         * @param socketChannel 需要装填的与客户端打交道的channel
-         */
         private void loadingSocketChannel(SocketChannel socketChannel) {
             // setSocketOptions() will add channel to the poller
             // if successful

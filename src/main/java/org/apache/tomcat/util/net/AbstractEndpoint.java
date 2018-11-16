@@ -30,6 +30,9 @@ import org.apache.tomcat.util.threads.TaskThreadFactory;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.lx.tomcat.util.SystemUtil;
 
+/**
+ * 基本都是get-set方法，设置属性，其他看不出来有啥特别的地方
+ */
 public abstract class AbstractEndpoint<S> {
 
     protected static final String DEFAULT_CIPHERS = "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5";
@@ -527,9 +530,8 @@ public abstract class AbstractEndpoint<S> {
         if (!"".equals(getUseServerCipherSuitesOrder().trim())) {
             try {
                 SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
-            } catch (NoSuchMethodException nsme) {
-                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                        nsme);
+            } catch (NoSuchMethodException ex) {
+                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"), ex);
             }
         }
     }
