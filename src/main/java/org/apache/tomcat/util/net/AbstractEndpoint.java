@@ -48,7 +48,7 @@ public abstract class AbstractEndpoint<S> {
     private long executorTerminationTimeoutMillis = 5000;
     protected int acceptorThreadCount = 0;
     protected int acceptorThreadPriority = Thread.NORM_PRIORITY;
-    private int maxConnections = 10000;
+    private int maxConnections = 2;
     private Executor executor = null;
     private int port;
     private InetAddress address;
@@ -546,10 +546,8 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected final void startAcceptorThreads() {
-        int count = getAcceptorThreadCount();
-        acceptors = new Acceptor[count];
-
-        for (int i = 0; i < count; i++) {
+        acceptors = new Acceptor[getAcceptorThreadCount()];
+        for (int i = 0; i < acceptors.length; i++) {
             acceptors[i] = createAcceptor();
             String threadName = getName() + "-Acceptor-" + i;
             acceptors[i].setThreadName(threadName);
@@ -617,6 +615,7 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected void countUpOrAwaitConnection() throws InterruptedException {
+        SystemUtil.logInfo(this,"查看maxConnections的连接数：",String.valueOf(maxConnections));
         if (maxConnections == -1)
             return;
         LimitLatch latch = connectionLimitLatch;

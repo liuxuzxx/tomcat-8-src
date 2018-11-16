@@ -80,13 +80,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private SSLContext sslContext = null;
     private String[] enabledCiphers;
     private String[] enabledProtocols;
+    private int pollerThreadPriority = Thread.NORM_PRIORITY;
 
     @Override
     public boolean setProperty(String name, String value) {
-        /**
-         * 方法内部使用final的方式很少见，估计这个作者是c++的程序员转换过来的 就是不让你改变这个字符串对象的吧
-         * 我们也是可以经常的使用这种方式的，这样子最起码可以让我们避免一定的错误吧 其实c++的一些个思想是可以借鉴过来的
-         */
         final String selectorPoolName = "selectorPool.";
         try {
             if (name.startsWith(selectorPoolName)) {
@@ -99,8 +96,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             return false;
         }
     }
-
-    private int pollerThreadPriority = Thread.NORM_PRIORITY;
 
     public void setPollerThreadPriority(int pollerThreadPriority) {
         this.pollerThreadPriority = pollerThreadPriority;
@@ -262,37 +257,27 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         SystemUtil.logInfo(this, "开始初始化ServerSocketChannel对象，以及初始化对应的服务线程进行服务...");
         serverSock = ServerSocketChannel.open();
         socketProperties.setProperties(serverSock.socket());
-        InetSocketAddress address = (getAddress() != null ? new InetSocketAddress(getAddress(), getPort())
-                : new InetSocketAddress(getPort()));
+        InetSocketAddress address = (getAddress() != null ? new InetSocketAddress(getAddress(), getPort()) : new InetSocketAddress(getPort()));
         SystemUtil.logInfo("IP地址是：", address.getHostName(), " Port是：", address.getPort() + "");
         serverSock.socket().bind(address, getBacklog());
         serverSock.configureBlocking(true); // mimic APR behavior
         serverSock.socket().setSoTimeout(getSocketProperties().getSoTimeout());
 
-        // Initialize thread count defaults for acceptor, poller
         if (acceptorThreadCount == 0) {
-            // FIXME: Doesn't seem to work that well with multiple accept
-            // threads
             acceptorThreadCount = 1;
         }
         if (pollerThreadCount <= 0) {
-            // minimum one poller thread
             pollerThreadCount = 1;
         }
         stopLatch = new CountDownLatch(pollerThreadCount);
-
-        // Initialize SSL if needed
         if (isSSLEnabled()) {
             SSLUtil sslUtil = handler.getSslImplementation().getSSLUtil(this);
-
             sslContext = sslUtil.createSSLContext();
             sslContext.init(wrap(sslUtil.getKeyManagers()), sslUtil.getTrustManagers(), null);
-
             SSLSessionContext sessionContext = sslContext.getServerSessionContext();
             if (sessionContext != null) {
                 sslUtil.configureSessionContext(sessionContext);
             }
-            // Determine which cipher suites and protocols to enable
             enabledCiphers = sslUtil.getEnableableCiphers(sslContext);
             enabledProtocols = sslUtil.getEnableableProtocols(sslContext);
         }
@@ -309,7 +294,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         for (int i = 0; i < result.length; i++) {
             if (managers[i] instanceof X509KeyManager && getKeyAlias() != null) {
                 String keyAlias = getKeyAlias();
-                // JKS keystores always convert the alias name to lower case
                 if ("jks".equalsIgnoreCase(getKeystoreType())) {
                     keyAlias = keyAlias.toLowerCase(Locale.ENGLISH);
                 }
@@ -323,23 +307,19 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     @Override
     public void startInternal() throws Exception {
-
         if (!running) {
             running = true;
             paused = false;
-
             processorCache = new SynchronizedStack<>(SynchronizedStack.DEFAULT_SIZE, socketProperties.getProcessorCache());
             eventCache = new SynchronizedStack<>(SynchronizedStack.DEFAULT_SIZE, socketProperties.getEventCache());
             nioChannels = new SynchronizedStack<>(SynchronizedStack.DEFAULT_SIZE, socketProperties.getBufferPool());
 
-            // Create worker collection
             if (getExecutor() == null) {
                 createExecutor();
             }
 
             initializeConnectionLatch();
 
-            // Start poller threads
             startPollerThreads();
 
             startAcceptorThreads();
@@ -562,54 +542,30 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         public void run() {
             SystemUtil.printInfo(this, "Acceptor线程启动了，可以接受客户端的请求了");
             int errorDelay = 0;
-
-            // Loop until we receive a shutdown command
             while (running) {
                 restAcceptor();
-
                 if (!running) {
                     break;
                 }
                 state = AcceptorState.RUNNING;
-
                 try {
-                    // if we have reached max connections, wait
                     countUpOrAwaitConnection();
-
                     SocketChannel socket;
                     try {
-                        /**
-                         * 终于看到了服务端接受到前端的请求了，就是这个地方，找到了！！！
-                         * 通篇来看，tomcat就使用了一个ServerSocketChannel
-                         * 不过话又说回来了，也造不出来大于一个的ServerSocketChannel啊
-                         */
                         socket = serverSock.accept();
                         SystemUtil.logInfo(this, "接受了一个客户端的请求......");
                     } catch (IOException ioe) {
                         errorDelay = cleanAccept(errorDelay);
-
-                        // re-throw
                         throw ioe;
                     }
-                    // Successful accept, reset the error delay
                     errorDelay = 0;
 
-                    /**
-                     * 根本上说：这个地方才是服务端接受到客户端的请求之后，然后，获取SocketChannel
-                     * 之后，交给Poller处理，Poller会交给PollerEvent处理，PollerEvent会把这个SocketChannel
-                     * 装填到selector当中去，当然这个selector是Poller的成员变量
-                     */
                     loadingSocketChannel(socket);
-
                 } catch (SocketTimeoutException sx) {
-                    // Ignore: Normal condition
                 } catch (IOException x) {
                     if (running) {
                         log.error(sm.getString("endpoint.accept.fail"), x);
                     }
-                    /**
-                     * 从Throwable之中实现的中有两种：Exception、Error，这个就是很少见的错误
-                     */
                 } catch (OutOfMemoryError oom) {
                     cleanOom(oom);
                 } catch (Throwable t) {
@@ -621,13 +577,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private int cleanAccept(int errorDelay) {
-            /**
-             * 他们的异常抓住之后总是做出一点操作，而不是抛射出去这么的简单，
-             * 就是做点事情呗
-             */
-            // we didn't get a socket
             countDownConnection();
-            // Introduce delay if necessary
             errorDelay = handleExceptionWithDelay(errorDelay);
             return errorDelay;
         }
@@ -652,8 +602,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private void loadingSocketChannel(SocketChannel socketChannel) {
-            // setSocketOptions() will add channel to the poller
-            // if successful
             if (running && !paused) {
                 if (!setSocketOptions(socketChannel)) {
                     cleanSocketChannel(socketChannel);
@@ -669,18 +617,11 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private void restAcceptor() {
-            // Loop if endpoint is paused
-            SystemUtil.printInfo(this, "一直运行，等待客户端的访问");
             while (paused && running) {
                 state = AcceptorState.PAUSED;
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(5*1000);
                 } catch (InterruptedException e) {
-                    /**
-                     * 其实很多的异常是不用问的，因为，就算是你知道地球明天就要灭亡，你又能做什么尼
-                     * 除了面对这个现实之外，你别无选择了，只能冷静的对待了，其实你是没有能力进行拯救地球的
-                     * 所以，很多的异常信息，你就算知道了，那又怎么样子，只能眼睁睁的看着了
-                     */
                 }
             }
         }
@@ -1622,12 +1563,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     }
 
     public static class SendfileData {
-        // File
         public volatile String fileName;
         public volatile FileChannel fchannel;
         public volatile long pos;
         public volatile long length;
-        // KeepAlive flag
         public volatile boolean keepAlive;
     }
 }

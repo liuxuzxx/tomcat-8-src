@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.tomcat.util.collections;
 
 /**
@@ -24,6 +8,7 @@ package org.apache.tomcat.util.collections;
  * as possible with minimum garbage.
  * 一个同步的栈数据结构，看样子也是Synchronized关键字满天飞啊
  * 使用数组进行Stack数据结构的模拟，然后加上synchronized关键字就行了
+ * 看代码好像应该是一个：使用数组模拟循环栈的东西
  */
 public class SynchronizedStack<T> {
 
@@ -33,9 +18,6 @@ public class SynchronizedStack<T> {
     private int size;
     private final int limit;
 
-    /*
-     * Points to the next available object in the stack
-     */
     private int index = -1;
 
     private Object[] stack;
@@ -66,7 +48,6 @@ public class SynchronizedStack<T> {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
     public synchronized T pop() {
         if (index == -1) {
             return null;
@@ -85,9 +66,6 @@ public class SynchronizedStack<T> {
         index = -1;
     }
 
-    /**
-     * 这种private的操作有点类似于c++的inline函数，就是直接给你嵌入到里面去的东西代码
-     */
     private void expand() {
         int newSize = size * 2;
         if (limit != -1 && newSize > limit) {
@@ -95,9 +73,6 @@ public class SynchronizedStack<T> {
         }
         Object[] newStack = new Object[newSize];
         System.arraycopy(stack, 0, newStack, 0, size);
-        // This is the only point where garbage is created by throwing away the
-        // old array. Note it is only the array, not the contents, that becomes
-        // garbage.
         stack = newStack;
         size = newSize;
     }
