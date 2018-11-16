@@ -617,6 +617,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private void restAcceptor() {
+            SystemUtil.logInfo(this,"查看paused的值:",String.valueOf(paused));
             while (paused && running) {
                 state = AcceptorState.PAUSED;
                 try {
