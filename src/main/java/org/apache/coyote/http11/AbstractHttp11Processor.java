@@ -1,18 +1,5 @@
 package org.apache.coyote.http11;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
-import java.util.Locale;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletResponse;
-
-import com.alibaba.fastjson.JSONObject;
 import org.apache.coyote.AbstractProcessor;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.AsyncContextCallback;
@@ -44,224 +31,79 @@ import org.apache.tomcat.util.net.SocketWrapper;
 import org.apache.tomcat.util.res.StringManager;
 import org.lx.tomcat.util.SystemUtil;
 
+import javax.servlet.RequestDispatcher;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
+import java.util.Locale;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
 public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
     private final UserDataHelper userDataHelper;
-
-
-    /**
-     * The string manager for this package.
-     */
-    protected static final StringManager sm =
-            StringManager.getManager(Constants.Package);
-
-
-    /**
-     * Input.
-     */
+    protected static final StringManager sm = StringManager.getManager(Constants.Package);
     protected AbstractInputBuffer<S> inputBuffer;
-
-
-    /**
-     * Output.
-     */
     protected AbstractOutputBuffer<S> outputBuffer;
-
-
-    /**
-     * Tracks how many internal filters are in the filter library so they
-     * are skipped when looking for pluggable filters.
-     */
     private int pluggableFilterIndex = Integer.MAX_VALUE;
-
-
-    /**
-     * Keep-alive.
-     */
     protected volatile boolean keepAlive = true;
-
-
-    /**
-     * Flag used to indicate that the socket should be kept open (e.g. for keep
-     * alive or send file.
-     */
     protected boolean openSocket = false;
-
-
-    /**
-     * Flag used to indicate that the socket should treat the next request
-     * processed like a keep-alive connection - i.e. one where there may not be
-     * any data to process. The initial value of this flag on entering the
-     * process method is different for connectors that use polling (NIO / APR -
-     * data is always expected) compared to those that use blocking (BIO - data
-     * is only expected if the connection isn't in the keep-alive state).
-     */
     protected boolean keptAlive;
-
-
-    /**
-     * Flag that indicates that send file processing is in progress and that the
-     * socket should not be returned to the poller (where a poller is used).
-     */
     protected boolean sendfileInProgress = false;
-
-
-    /**
-     * Flag that indicates if the request headers have been completely read.
-     */
     protected boolean readComplete = true;
-
-    /**
-     * HTTP/1.1 flag.
-     */
     protected boolean http11 = true;
-
-
-    /**
-     * HTTP/0.9 flag.
-     */
     protected boolean http09 = false;
-
-
-    /**
-     * Content delimiter for the request (if false, the connection will
-     * be closed at the end of the request).
-     */
     protected boolean contentDelimitation = true;
-
-
-    /**
-     * Is there an expectation ?
-     */
     protected boolean expectation = false;
-
-
-    /**
-     * Comet used.
-     */
     protected boolean comet = false;
-
-
-    /**
-     * Regular expression that defines the restricted user agents.
-     */
     protected Pattern restrictedUserAgents = null;
-
-
-    /**
-     * Maximum number of Keep-Alive requests to honor.
-     */
     protected int maxKeepAliveRequests = -1;
-
-    /**
-     * The number of seconds Tomcat will wait for a subsequent request
-     * before closing the connection.
-     */
     protected int keepAliveTimeout = -1;
-
-    /**
-     * Maximum timeout on uploads. 5 minutes as in Apache HTTPD server.
-     */
     protected int connectionUploadTimeout = 300000;
-
-
-    /**
-     * Flag to disable setting a different time-out on uploads.
-     */
     protected boolean disableUploadTimeout = false;
-
-
-    /**
-     * Allowed compression level.
-     */
     protected int compressionLevel = 0;
-
-
-    /**
-     * Minimum content size to make compression.
-     */
     protected int compressionMinSize = 2048;
-
-
-    /**
-     * Max saved post size.
-     */
     protected int maxSavePostSize = 4 * 1024;
-
-
-    /**
-     * Regular expression that defines the user agents to not use gzip with
-     */
     protected Pattern noCompressionUserAgents = null;
-
-    /**
-     * List of MIMES which could be gzipped
-     */
-    protected String[] compressableMimeTypes =
-            {"text/html", "text/xml", "text/plain"};
-
-
-    /**
-     * Host name (used to avoid useless B2C conversion on the host name).
-     */
+    protected String[] compressableMimeTypes = {"text/html", "text/xml", "text/plain"};
     protected char[] hostNameC = new char[0];
-
-
-    /**
-     * Allow a customized the server header for the tin-foil hat folks.
-     */
     protected String server = null;
-
-
-    /**
-     * Instance of the new protocol to use after the HTTP connection has been
-     * upgraded.
-     */
     protected UpgradeToken upgradeToken = null;
-
 
     public AbstractHttp11Processor(AbstractEndpoint<S> endpoint) {
         super(endpoint);
         userDataHelper = new UserDataHelper(getLog());
     }
 
-
-    /**
-     * Set compression level.
-     */
     public void setCompression(String compression) {
-        if (compression.equals("on")) {
-            this.compressionLevel = 1;
-        } else if (compression.equals("force")) {
-            this.compressionLevel = 2;
-        } else if (compression.equals("off")) {
-            this.compressionLevel = 0;
-        } else {
-            try {
-                // Try to parse compression as an int, which would give the
-                // minimum compression size
-                compressionMinSize = Integer.parseInt(compression);
+        switch (compression) {
+            case "on":
                 this.compressionLevel = 1;
-            } catch (Exception e) {
+                break;
+            case "force":
+                this.compressionLevel = 2;
+                break;
+            case "off":
                 this.compressionLevel = 0;
-            }
+                break;
+            default:
+                try {
+                    compressionMinSize = Integer.parseInt(compression);
+                    this.compressionLevel = 1;
+                } catch (Exception e) {
+                    this.compressionLevel = 0;
+                }
+                break;
         }
     }
 
-    /**
-     * Set Minimum size to trigger compression.
-     */
     public void setCompressionMinSize(int compressionMinSize) {
         this.compressionMinSize = compressionMinSize;
     }
 
-
-    /**
-     * Set no compression user agent pattern. Regular expression as supported
-     * by {@link Pattern}.
-     * <p>
-     * ie: "gorilla|desesplorer|tigrus"
-     */
     public void setNoCompressionUserAgents(String noCompressionUserAgents) {
         if (noCompressionUserAgents == null || noCompressionUserAgents.length() == 0) {
             this.noCompressionUserAgents = null;
@@ -271,35 +113,14 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         }
     }
 
-    /**
-     * Add a mime-type which will be compressible
-     * The mime-type String will be exactly matched
-     * in the response mime-type header .
-     *
-     * @param mimeType mime-type string
-     */
     public void addCompressableMimeType(String mimeType) {
-        compressableMimeTypes =
-                addStringArray(compressableMimeTypes, mimeType);
+        compressableMimeTypes = addStringArray(compressableMimeTypes, mimeType);
     }
 
-
-    /**
-     * Set compressible mime-type list (this method is best when used with
-     * a large number of connectors, where it would be better to have all of
-     * them referenced a single array).
-     */
     public void setCompressableMimeTypes(String[] compressableMimeTypes) {
         this.compressableMimeTypes = compressableMimeTypes;
     }
 
-
-    /**
-     * Set compressable mime-type list
-     * List contains users agents separated by ',' :
-     * <p>
-     * ie: "text/html,text/xml,text/plain"
-     */
     public void setCompressableMimeTypes(String compressableMimeTypes) {
         if (compressableMimeTypes != null) {
             this.compressableMimeTypes = null;
@@ -311,10 +132,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         }
     }
 
-
-    /**
-     * Return compression level.
-     */
     public String getCompression() {
         switch (compressionLevel) {
             case 0:
@@ -327,13 +144,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return "off";
     }
 
-
-    /**
-     * General use method
-     *
-     * @param sArray the StringArray
-     * @param value  string
-     */
     private String[] addStringArray(String sArray[], String value) {
         String[] result = null;
         if (sArray == null) {
@@ -349,13 +159,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return result;
     }
 
-
-    /**
-     * Checks if any entry in the string array starts with the specified value
-     *
-     * @param sArray the StringArray
-     * @param value  string
-     */
     private boolean startsWithStringArray(String sArray[], String value) {
         if (value == null) {
             return false;
@@ -957,8 +760,8 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
      * @param socketWrapper Socket from which the HTTP requests will be read
      *                      and the HTTP responses will be written.
      * @throws IOException error during an I/O operation
-     * tomcat的作者写这种长代码是不是有瘾啊，凡是处理过程的代码，最少来个200行
-     * 其实，这个函数主要的功能是：解析HTTP的报文，然后返回Response
+     *                     tomcat的作者写这种长代码是不是有瘾啊，凡是处理过程的代码，最少来个200行
+     *                     其实，这个函数主要的功能是：解析HTTP的报文，然后返回Response
      */
     @Override
     public SocketState process(SocketWrapper<S> socketWrapper)

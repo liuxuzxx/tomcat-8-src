@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.tomcat.util.net;
 
 import java.io.IOException;
@@ -32,25 +16,15 @@ import org.lx.tomcat.util.SystemUtil;
  * Base class for a SocketChannel wrapper used by the endpoint.
  * This way, logic for a SSL socket channel remains the same as for
  * a non SSL, making sure we don't need to code for any exception cases.
- *
- * @version 1.0
- */
-
-/**
  * 这个是tomcat自己封装的io处理，就是进行字节byte那个深度的信息的获取和交流的
- *
- * @author liuxu
  */
 public class NioChannel implements ByteChannel {
 
     protected static final StringManager sm = StringManager.getManager("org.apache.tomcat.util.net.res");
 
     protected static ByteBuffer emptyBuf = ByteBuffer.allocate(0);
-
     protected SocketChannel sc = null;
-
     protected ApplicationBufferHandler bufHandler;
-
     protected Poller poller;
 
     public NioChannel(SocketChannel channel, ApplicationBufferHandler bufHandler) {

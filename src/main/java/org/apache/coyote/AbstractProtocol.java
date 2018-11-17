@@ -1,23 +1,4 @@
-
 package org.apache.coyote;
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistration;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.WebConnection;
 
 import org.apache.juli.logging.Log;
 import org.apache.tomcat.InstanceManager;
@@ -32,73 +13,41 @@ import org.apache.tomcat.util.net.SocketWrapper;
 import org.apache.tomcat.util.res.StringManager;
 import org.lx.tomcat.util.SystemUtil;
 
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanRegistration;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.servlet.http.HttpUpgradeHandler;
+import javax.servlet.http.WebConnection;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegistration {
-
-    /**
-     * 发现没有，他们有一个好习惯，就是这个成员变量一定给值的，不是让你给默认值 我估计这帮程序员一定是从c++转过来的，绝对是半路上学习了java的
-     */
-    /**
-     * The string manager for this package.
-     */
     protected static final StringManager sm = StringManager.getManager(Constants.Package);
-
-    /**
-     * Counter used to generate unique JMX names for connectors using automatic
-     * port binding.
-     */
     private static final AtomicInteger nameCounter = new AtomicInteger(0);
-
-    /**
-     * Name of MBean for the Global Request Processor.
-     */
     protected ObjectName rgOname = null;
-
-    /**
-     * Name of MBean for the ThreadPool.
-     */
     protected ObjectName tpOname = null;
-
-    /**
-     * Unique ID for this connector. Only used if the connector is configured to
-     * use a random port as the port will change if stop(), start() is called.
-     */
     private int nameIndex = 0;
-
-    /**
-     * Endpoint that provides low-level network I/O - must be matched to the
-     * ProtocolHandler implementation (ProtocolHandler using BIO, requires BIO
-     * Endpoint etc.).
-     */
     protected AbstractEndpoint<S> endpoint = null;
+    protected Adapter adapter;
+    protected int processorCache = 200;
+    protected String clientCertProvider = null;
 
-    // ----------------------------------------------- Generic property handling
-
-    /**
-     * Generic property setter used by the digester. Other code should not need
-     * to use this. The digester will only use this method if it can't find a
-     * more specific setter. That means the property belongs to the Endpoint,
-     * the ServerSocketFactory or some other lower level component. This method
-     * ensures that it is visible to both.
-     */
     public boolean setProperty(String name, String value) {
         return endpoint.setProperty(name, value);
     }
 
-    /**
-     * Generic property getter used by the digester. Other code should not need
-     * to use this.
-     */
     public String getProperty(String name) {
         return endpoint.getProperty(name);
     }
-
-    // ------------------------------- Properties managed by the ProtocolHandler
-
-    /**
-     * The adapter provides the link between the ProtocolHandler and the
-     * connector.
-     */
-    protected Adapter adapter;
 
     @Override
     public void setAdapter(Adapter adapter) {
@@ -110,15 +59,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return adapter;
     }
 
-    /**
-     * The maximum number of idle(空闲的) processors that will be retained in the
-     * cache and re-used with a subsequent request. The default is 200. A value
-     * of -1 means unlimited. In the unlimited case, the theoretical maximum
-     * number of cached Processor objects is {@link #getMaxConnections()}
-     * although it will usually be closer to {@link #getMaxThreads()}.
-     */
-    protected int processorCache = 200;
-
     public int getProcessorCache() {
         return this.processorCache;
     }
@@ -126,17 +66,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
     public void setProcessorCache(int processorCache) {
         this.processorCache = processorCache;
     }
-
-    /**
-     * When client certificate information is presented in a form other than
-     * instances of {@link java.security.cert.X509Certificate} it needs to be
-     * converted before it can be used and this property controls which JSSE
-     * provider is used to perform the conversion. For example it is used with
-     * the AJP connectors, the HTTP APR connector and with the
-     * {@link org.apache.catalina.valves.SSLValve}. If not specified, the
-     * default provider will be used.
-     */
-    protected String clientCertProvider = null;
 
     public String getClientCertProvider() {
         return clientCertProvider;
@@ -151,9 +80,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return false;
     }
 
-    /**
-     * 从这个地方开始都是和一个endpoint这个对象有很大的关系 估计这个才是硬菜
-     */
     @Override
     public boolean isCometSupported() {
         return endpoint.getUseComet();
@@ -168,8 +94,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
     public boolean isSendfileSupported() {
         return endpoint.getUseSendfile();
     }
-
-    // ---------------------- Properties that are passed through to the EndPoint
 
     @Override
     public Executor getExecutor() {
@@ -264,23 +188,14 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return endpoint.getLocalPort();
     }
 
-    /*
-     * When Tomcat expects data from the client, this is the time Tomcat will
-     * wait for that data to arrive before closing the connection.
-     */
     public int getConnectionTimeout() {
-        // Note that the endpoint uses the alternative name
         return endpoint.getSoTimeout();
     }
 
     public void setConnectionTimeout(int timeout) {
-        // Note that the endpoint uses the alternative name
         endpoint.setSoTimeout(timeout);
     }
 
-    /*
-     * Alternative name for connectionTimeout property
-     */
     public int getSoTimeout() {
         return getConnectionTimeout();
     }
@@ -301,25 +216,14 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return endpoint.getConnectionCount();
     }
 
-    // ---------------------------------------------------------- Public methods
-
     public synchronized int getNameIndex() {
         if (nameIndex == 0) {
             nameIndex = nameCounter.incrementAndGet();
         }
-
         return nameIndex;
     }
 
-    /**
-     * The name will be prefix-address-port if address is non-null and
-     * prefix-port if the address is null. The name will be appropriately quoted
-     * so it can be used directly in an ObjectName.
-     */
     public String getName() {
-        /**
-         * 只要是涉及到字符串的拼接，这个StringBuilder就是必须的，因为是性能和内存的原因造成的
-         */
         StringBuilder name = new StringBuilder(getNamePrefix());
         name.append('-');
         if (getAddress() != null) {
@@ -328,7 +232,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         }
         int port = getPort();
         if (port == 0) {
-            // Auto binding is in use. Check if port is known
             name.append("auto-");
             name.append(getNameIndex());
             port = getLocalPort();
@@ -342,31 +245,13 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return ObjectName.quote(name.toString());
     }
 
-    // -------------------------------------------------------- Abstract methods
-
-    /**
-     * Concrete implementations need to provide access to their logger to be
-     * used by the abstract classes.
-     */
     protected abstract Log getLog();
 
-    /**
-     * Obtain the prefix to be used when construction a name for this protocol
-     * handler. The name will be prefix-address-port.
-     */
     protected abstract String getNamePrefix();
 
-    /**
-     * Obtain the name of the protocol, (Http, Ajp, etc.). Used with JMX.
-     */
     protected abstract String getProtocolName();
 
-    /**
-     * Obtain the handler associated with the underlying Endpoint
-     */
     protected abstract Handler getHandler();
-
-    // ----------------------------------------------------- JMX related methods
 
     protected String domain;
     protected ObjectName oname;
@@ -388,32 +273,23 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return name;
     }
 
-    /**
-     * 如果是没写或者是现在还没有用的方法，那么就首先是放在哪儿，就是noop（空操作）
-     */
     @Override
     public void postRegister(Boolean registrationDone) {
-        // NOOP(空操作)
     }
 
     @Override
     public void preDeregister() throws Exception {
-        // NOOP
     }
 
     @Override
     public void postDeregister() {
-        // NOOP
     }
 
     private ObjectName createObjectName() throws MalformedObjectNameException {
-        // Use the same domain as the connector
         domain = getAdapter().getDomain();
-
         if (domain == null) {
             return null;
         }
-
         StringBuilder name = new StringBuilder(getDomain());
         name.append(":type=ProtocolHandler,port=");
         int port = getPort();
@@ -431,21 +307,12 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
         return new ObjectName(name.toString());
     }
 
-    // ------------------------------------------------------- Lifecycle methods
-
-	/*
-     * NOTE: There is no maintenance of state or checking for valid transitions
-	 * within this class. It is expected that the connector will maintain state
-	 * and prevent invalid state transitions.
-	 */
-
     @Override
     public void init() throws Exception {
-        if (getLog().isInfoEnabled())
+        if (getLog().isInfoEnabled()) {
             getLog().info(sm.getString("abstractProtocolHandler.init", getName()));
-
+        }
         if (oname == null) {
-            // Component not pre-registered so register it
             oname = createObjectName();
             if (oname != null) {
                 Registry.getRegistry(null, null).registerComponent(this, oname, null);
@@ -584,24 +451,20 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
 
         /**
          * 这一块应该是对这个socket的封装吧 反正是只要是访问的时候，这个地方就会出现一次日志的记录问题
+         * 这个函数，不得不吐槽一下：真的写的很臃肿啊!
          */
         public SocketState process(SocketWrapper<S> wrapper, SocketStatus status) {
-            SystemUtil.logInfo(this, "访问的时候从这个地方经过了");
             if (wrapper == null) {
-                // Nothing to do. Socket has been closed.
                 return SocketState.CLOSED;
             }
 
             S socket = wrapper.getSocket();
             if (socket == null) {
-                // Nothing to do. Socket has been closed.
                 return SocketState.CLOSED;
             }
 
             Processor<S> processor = connections.get(socket);
             if (status == SocketStatus.DISCONNECT && processor == null) {
-                // Nothing to do. Endpoint requested a close and there is no
-                // longer a processor associated with this socket.
                 return SocketState.CLOSED;
             }
 
@@ -626,8 +489,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                         processor.errorDispatch();
                         state = SocketState.CLOSED;
                     } else if (dispatches != null) {
-                        // Associate the processor with the connection as
-                        // these calls may result in a nested call to process()
                         connections.put(socket, processor);
                         DispatchType nextDispatch = dispatches.next();
                         if (processor.isUpgrade()) {
@@ -640,32 +501,18 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                     } else if (processor.isUpgrade()) {
                         state = processor.upgradeDispatch(status);
                     } else if (status == SocketStatus.DISCONNECT) {
-                        // Comet and upgrade need to see DISCONNECT but the
-                        // others don't. NO-OP and let socket close.
+                        getLog().info("没有执行任何语句，就是空着");
                     } else if (processor.isAsync()) {
                         state = processor.asyncDispatch(status);
                     } else if (state == SocketState.ASYNC_END) {
                         state = processor.asyncDispatch(status);
-                        // release() won't get called so in case this request
-                        // takes a long time to process remove the socket from
-                        // the waiting requests now else the async timeout will
-                        // fire
                         getProtocol().endpoint.removeWaitingRequest(wrapper);
                         if (state == SocketState.OPEN) {
-                            // There may be pipe-lined data to read. If the data
-                            // isn't processed now, execution will exit this
-                            // loop and call release() which will recycle the
-                            // processor (and input buffer) deleting any
-                            // pipe-lined data. To avoid this, process it now.
                             state = processor.process(wrapper);
                         }
                     } else if (status == SocketStatus.OPEN_WRITE) {
-                        // Extra write event likely after async, ignore
                         state = SocketState.LONG;
                     } else {
-                        /**
-                         * 原来是在这句话朝向浏览器进行数据的写入操作
-                         */
                         state = processor.process(wrapper);
                         SystemUtil.logInfo(this, "就是这一句话，朝向浏览器写入了数据信息");
                     }
@@ -675,25 +522,13 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                     }
 
                     if (state == SocketState.UPGRADING) {
-                        // Get the HTTP upgrade handler
                         UpgradeToken upgradeToken = processor.getUpgradeToken();
                         HttpUpgradeHandler httpUpgradeHandler = upgradeToken.getHttpUpgradeHandler();
-                        // Retrieve leftover input
                         ByteBuffer leftoverInput = processor.getLeftoverInput();
-                        // Release the Http11 processor to be re-used
                         release(wrapper, processor, false, false);
-                        // Create the upgrade processor
                         processor = createUpgradeProcessor(wrapper, leftoverInput, upgradeToken);
-                        // Mark the connection as upgraded
                         wrapper.setUpgraded(true);
-                        // Associate with the processor with the connection
                         connections.put(socket, processor);
-                        // Initialise the upgrade handler (which may trigger
-                        // some IO using the new protocol which is why the lines
-                        // above are necessary)
-                        // This cast should be safe. If it fails the error
-                        // handling for the surrounding try/catch will deal with
-                        // it.
                         if (upgradeToken.getInstanceManager() == null) {
                             httpUpgradeHandler.init((WebConnection) processor);
                         } else {
@@ -706,91 +541,67 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                         }
                     }
                     if (getLog().isDebugEnabled()) {
-                        getLog().debug(
-                                "Socket: [" + wrapper + "], Status in: [" + status + "], State out: [" + state + "]");
+                        getLog().debug("Socket: [" + wrapper + "], Status in: [" + status + "], State out: [" + state + "]");
                     }
                     if (dispatches == null || !dispatches.hasNext()) {
-                        // Only returns non-null iterator if there are
-                        // dispatches to process.
                         dispatches = wrapper.getIteratorAndClearDispatches();
                     }
                 } while (state == SocketState.ASYNC_END || state == SocketState.UPGRADING
                         || dispatches != null && state != SocketState.CLOSED);
 
-                if (state == SocketState.LONG) {
-                    // In the middle of processing a request/response. Keep the
-                    // socket associated with the processor. Exact requirements
-                    // depend on type of long poll
-                    connections.put(socket, processor);
-                    longPoll(wrapper, processor);
-                } else if (state == SocketState.OPEN) {
-                    // In keep-alive but between requests. OK to recycle
-                    // processor. Continue to poll for the next request.
-                    connections.remove(socket);
-                    release(wrapper, processor, false, true);
-                } else if (state == SocketState.SENDFILE) {
-                    // Sendfile in progress. If it fails, the socket will be
-                    // closed. If it works, the socket will be re-added to the
-                    // poller
-                    connections.remove(socket);
-                    release(wrapper, processor, false, false);
-                } else if (state == SocketState.UPGRADED) {
-                    // Don't add sockets back to the poller if this was a
-                    // non-blocking write otherwise the poller may trigger
-                    // multiple read events which may lead to thread starvation
-                    // in the connector. The write() method will add this socket
-                    // to the poller if necessary.
-                    if (status != SocketStatus.OPEN_WRITE) {
+                switch (state) {
+                    case LONG:
+                        connections.put(socket, processor);
                         longPoll(wrapper, processor);
-                    }
-                } else {
-                    // Connection closed. OK to recycle the processor. Upgrade
-                    // processors are not recycled.
-                    connections.remove(socket);
-                    if (processor.isUpgrade()) {
-                        UpgradeToken upgradeToken = processor.getUpgradeToken();
-                        HttpUpgradeHandler httpUpgradeHandler = upgradeToken.getHttpUpgradeHandler();
-                        InstanceManager instanceManager = upgradeToken.getInstanceManager();
-                        if (instanceManager == null) {
-                            httpUpgradeHandler.destroy();
-                        } else {
-                            ClassLoader oldCL = upgradeToken.getContextBind().bind(false, null);
-                            try {
-                                httpUpgradeHandler.destroy();
-                                instanceManager.destroyInstance(httpUpgradeHandler);
-                            } finally {
-                                upgradeToken.getContextBind().unbind(false, oldCL);
-                            }
+                        break;
+                    case OPEN:
+                        connections.remove(socket);
+                        release(wrapper, processor, false, true);
+                        break;
+                    case SENDFILE:
+                        connections.remove(socket);
+                        release(wrapper, processor, false, false);
+                        break;
+                    case UPGRADED:
+                        if (status != SocketStatus.OPEN_WRITE) {
+                            longPoll(wrapper, processor);
                         }
-                    } else {
-                        release(wrapper, processor, true, false);
-                    }
+                        break;
+                    default:
+                        connections.remove(socket);
+                        if (processor.isUpgrade()) {
+                            UpgradeToken upgradeToken = processor.getUpgradeToken();
+                            HttpUpgradeHandler httpUpgradeHandler = upgradeToken.getHttpUpgradeHandler();
+                            InstanceManager instanceManager = upgradeToken.getInstanceManager();
+                            if (instanceManager == null) {
+                                httpUpgradeHandler.destroy();
+                            } else {
+                                ClassLoader oldCL = upgradeToken.getContextBind().bind(false, null);
+                                try {
+                                    httpUpgradeHandler.destroy();
+                                    instanceManager.destroyInstance(httpUpgradeHandler);
+                                } finally {
+                                    upgradeToken.getContextBind().unbind(false, oldCL);
+                                }
+                            }
+                        } else {
+                            release(wrapper, processor, true, false);
+                        }
+                        break;
                 }
                 return state;
             } catch (java.net.SocketException e) {
-                // SocketExceptions are normal
                 getLog().debug(sm.getString("abstractConnectionHandler.socketexception.debug"), e);
             } catch (java.io.IOException e) {
-                // IOExceptions are normal
                 getLog().debug(sm.getString("abstractConnectionHandler.ioexception.debug"), e);
-            }
-            // Future developers: if you discover any other
-            // rare-but-nonfatal exceptions, catch them here, and log as
-            // above.
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 ExceptionUtils.handleThrowable(e);
-                // any other exception or error is odd. Here we log it
-                // with "ERROR" level, so it will show up even on
-                // less-than-verbose logs.
                 getLog().error(sm.getString("abstractConnectionHandler.error"), e);
             } finally {
                 ContainerThreadMarker.clear();
             }
 
-            // Make sure socket/processor is removed from the list of current
-            // connections
             connections.remove(socket);
-            // Don't try to add upgrade processors back into the pool
             if (processor != null && !processor.isUpgrade()) {
                 release(wrapper, processor, true, false);
             }
@@ -837,7 +648,6 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                     try {
                         Request r = processor.getRequest();
                         if (r == null) {
-                            // Probably an UpgradeProcessor
                             return;
                         }
                         RequestInfo rp = r.getRequestProcessor();
