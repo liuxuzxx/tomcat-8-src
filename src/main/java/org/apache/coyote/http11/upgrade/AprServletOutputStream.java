@@ -147,7 +147,7 @@ public class AprServletOutputStream extends AbstractServletOutputStream<Long> {
         } while (written > 0 && left > 0);
 
         if (left > 0) {
-            socketWrapper.registerforEvent(-1, false, true);
+            socketWrapper.registerForEvent(-1, false, true);
         }
         return len - left;
     }

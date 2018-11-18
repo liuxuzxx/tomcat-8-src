@@ -75,7 +75,7 @@ public class AjpAprProcessor extends AbstractAjpProcessor<Long> {
 
     @Override
     protected void registerForEvent(boolean read, boolean write) {
-        socketWrapper.registerforEvent(-1, read, write);
+        socketWrapper.registerForEvent(-1, read, write);
     }
 
     @Override

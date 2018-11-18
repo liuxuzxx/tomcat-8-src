@@ -223,7 +223,7 @@ public class Http11AprProcessor extends AbstractHttp11Processor<Long> {
 
     @Override
     protected void registerForEvent(boolean read, boolean write) {
-        socketWrapper.registerforEvent(-1, read, write);
+        socketWrapper.registerForEvent(-1, read, write);
     }
 
 

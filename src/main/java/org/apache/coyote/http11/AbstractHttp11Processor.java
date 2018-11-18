@@ -298,25 +298,19 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
             if (Ascii.toLower(buff[i]) != first) {
                 continue;
             }
-            // found first char, now look for a match
             int myPos = i + 1;
             for (int srcPos = 1; srcPos < srcEnd; ) {
                 if (Ascii.toLower(buff[myPos++]) != b[srcPos++]) {
                     break;
                 }
                 if (srcPos == srcEnd) {
-                    return i - start; // found it
+                    return i - start;
                 }
             }
         }
         return -1;
     }
 
-
-    /**
-     * Determine if we must drop the connection because of the HTTP status
-     * code.  Use the same list of codes as Apache/httpd.
-     */
     protected boolean statusDropsConnection(int status) {
         return status == 400 /* SC_BAD_REQUEST */ ||
                 status == 408 /* SC_REQUEST_TIMEOUT */ ||
@@ -328,67 +322,29 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 status == 501 /* SC_NOT_IMPLEMENTED */;
     }
 
-
-    /**
-     * Exposes input buffer to super class to allow better code re-use.
-     *
-     * @return The input buffer used by the processor.
-     */
     protected abstract AbstractInputBuffer<S> getInputBuffer();
 
-
-    /**
-     * Exposes output buffer to super class to allow better code re-use.
-     *
-     * @return The output buffer used by the processor.
-     */
     protected abstract AbstractOutputBuffer<S> getOutputBuffer();
 
-
-    /**
-     * Initialize standard input and output filters.
-     */
     protected void initializeFilters(int maxTrailerSize, Set<String> allowedTrailerHeaders,
                                      int maxExtensionSize, int maxSwallowSize) {
-        // Create and add the identity filters.
         getInputBuffer().addFilter(new IdentityInputFilter(maxSwallowSize));
         getOutputBuffer().addFilter(new IdentityOutputFilter());
-
-        // Create and add the chunked filters.
-        getInputBuffer().addFilter(new ChunkedInputFilter(maxTrailerSize, allowedTrailerHeaders,
-                maxExtensionSize, maxSwallowSize));
+        getInputBuffer().addFilter(new ChunkedInputFilter(maxTrailerSize, allowedTrailerHeaders, maxExtensionSize, maxSwallowSize));
         getOutputBuffer().addFilter(new ChunkedOutputFilter());
-
-        // Create and add the void filters
         getInputBuffer().addFilter(new VoidInputFilter());
         getOutputBuffer().addFilter(new VoidOutputFilter());
-
-        // Create and add buffered input filter
         getInputBuffer().addFilter(new BufferedInputFilter());
-
-        // Create and add the chunked filters.
-        //getInputBuffer().addFilter(new GzipInputFilter());
         getOutputBuffer().addFilter(new GzipOutputFilter());
-
         pluggableFilterIndex = getInputBuffer().getFilters().length;
     }
 
-
-    /**
-     * Add an input filter to the current request. If the encoding is not
-     * supported, a 501 response will be returned to the client.
-     */
     private void addInputFilter(InputFilter[] inputFilters, String encodingName) {
-
-        // Trim provided encoding name and convert to lower case since transfer
-        // encoding names are case insensitive. (RFC2616, section 3.6)
         encodingName = encodingName.trim().toLowerCase(Locale.ENGLISH);
-
         if (encodingName.equals("identity")) {
             // Skip
         } else if (encodingName.equals("chunked")) {
-            getInputBuffer().addActiveFilter
-                    (inputFilters[Constants.CHUNKED_FILTER]);
+            getInputBuffer().addActiveFilter(inputFilters[Constants.CHUNKED_FILTER]);
             contentDelimitation = true;
         } else {
             for (int i = pluggableFilterIndex; i < inputFilters.length; i++) {
@@ -397,30 +353,19 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                     return;
                 }
             }
-            // Unsupported transfer encoding
-            // 501 - Unimplemented
             response.setStatus(501);
             setErrorState(ErrorState.CLOSE_CLEAN, null);
             if (getLog().isDebugEnabled()) {
-                getLog().debug(sm.getString("http11processor.request.prepare") +
-                        " Unsupported transfer encoding [" + encodingName + "]");
+                getLog().debug(sm.getString("http11processor.request.prepare") + " Unsupported transfer encoding [" + encodingName + "]");
             }
         }
     }
 
-
-    /**
-     * Send an action to the connector.
-     *
-     * @param actionCode Type of the action
-     * @param param      Action parameter
-     */
     @Override
     public final void action(ActionCode actionCode, Object param) {
 
         switch (actionCode) {
             case CLOSE: {
-                // End the processing of the current request
                 try {
                     getOutputBuffer().endRequest();
                 } catch (IOException e) {
@@ -429,12 +374,9 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 break;
             }
             case COMMIT: {
-                // Commit current response
                 if (response.isCommitted()) {
                     return;
                 }
-
-                // Validate and write response headers
                 try {
                     prepareResponse();
                     getOutputBuffer().commit();
@@ -444,13 +386,9 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 break;
             }
             case ACK: {
-                // Acknowledge request
-                // Send a 100 status back if it makes sense (response not committed
-                // yet, and client specified an expectation for 100-continue)
                 if ((response.isCommitted()) || !expectation) {
                     return;
                 }
-
                 getInputBuffer().setSwallowInput(true);
                 try {
                     getOutputBuffer().sendAck();
@@ -473,32 +411,25 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 break;
             }
             case DISABLE_SWALLOW_INPUT: {
-                // Do not swallow request input and make sure we are closing the
-                // connection
                 setErrorState(ErrorState.CLOSE_CLEAN, null);
                 getInputBuffer().setSwallowInput(false);
                 break;
             }
             case RESET: {
-                // Note: This must be called before the response is committed
                 getOutputBuffer().reset();
                 break;
             }
             case REQ_SET_BODY_REPLAY: {
                 ByteChunk body = (ByteChunk) param;
-
                 InputFilter savedBody = new SavedRequestInputFilter(body);
                 savedBody.setRequest(request);
-
                 @SuppressWarnings("unchecked")
-                AbstractInputBuffer<S> internalBuffer = (AbstractInputBuffer<S>)
-                        request.getInputBuffer();
+                AbstractInputBuffer<S> internalBuffer = (AbstractInputBuffer<S>) request.getInputBuffer();
                 internalBuffer.addActiveFilter(savedBody);
                 break;
             }
             case ASYNC_START: {
                 asyncStateMachine.asyncStart((AsyncContextCallback) param);
-                // Async time out is based on SocketWrapper access time
                 getSocketWrapper().access();
                 break;
             }
@@ -554,8 +485,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 if (param == null || socketWrapper == null) {
                     return;
                 }
-                long timeout = ((Long) param).longValue();
-                // If we are not piggy backing on a worker thread, set the timeout
+                long timeout = (Long) param;
                 socketWrapper.setTimeout(timeout);
                 break;
             }
@@ -567,7 +497,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
             }
             case UPGRADE: {
                 upgradeToken = (UpgradeToken) param;
-                // Stop further HTTP output
                 getOutputBuffer().finished = true;
                 break;
             }
@@ -610,7 +539,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 break;
             }
             case CLOSE_NOW: {
-                // Block further output
                 getOutputBuffer().finished = true;
                 setErrorState(ErrorState.CLOSE_NOW, null);
                 break;
@@ -633,93 +561,41 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
     protected abstract void actionInternal(ActionCode actionCode, Object param);
 
-
-    /**
-     * Processors (currently only HTTP BIO) may elect to disable HTTP keep-alive
-     * in some circumstances. This method allows the processor implementation to
-     * determine if keep-alive should be disabled or not.
-     */
     protected abstract boolean disableKeepAlive();
 
-
-    /**
-     * Configures the timeout to be used for reading the request line.
-     */
     protected abstract void setRequestLineReadTimeout() throws IOException;
 
-
-    /**
-     * Defines how a connector handles an incomplete request line read.
-     *
-     * @return <code>true</code> if the processor should break out of the
-     * processing loop, otherwise <code>false</code>.
-     */
     protected abstract boolean handleIncompleteRequestLineRead();
 
-
-    /**
-     * Set the socket timeout.
-     */
     protected abstract void setSocketTimeout(int timeout) throws IOException;
 
-
-    /**
-     * Process pipelined HTTP requests using the specified input and output
-     * streams.
-     *
-     * @param socketWrapper Socket from which the HTTP requests will be read
-     *                      and the HTTP responses will be written.
-     * @throws IOException error during an I/O operation
-     *                     tomcat的作者写这种长代码是不是有瘾啊，凡是处理过程的代码，最少来个200行
-     *                     其实，这个函数主要的功能是：解析HTTP的报文，然后返回Response
-     */
     @Override
-    public SocketState process(SocketWrapper<S> socketWrapper)
-            throws IOException {
+    public SocketState process(SocketWrapper<S> socketWrapper) throws IOException {
         SystemUtil.logInfo(this, "继续跟踪，果然是这句话对实际的文档信息写入做出了最终的判决");
         RequestInfo rp = request.getRequestProcessor();
         rp.setStage(org.apache.coyote.Constants.STAGE_PARSE);
-
-        // Setting up the I/O
         setSocketWrapper(socketWrapper);
         getInputBuffer().init(socketWrapper, endpoint);
         getOutputBuffer().init(socketWrapper, endpoint);
-
-        // Flags
         initFlag(socketWrapper);
-
         if (disableKeepAlive()) {
             socketWrapper.setKeepAliveLeft(0);
         }
-
-        while (!getErrorState().isError() && keepAlive && !comet && !isAsync() &&
-                upgradeToken == null && !endpoint.isPaused()) {
-
-            // Parsing the request header
+        while (!getErrorState().isError() && keepAlive && !comet && !isAsync() && upgradeToken == null && !endpoint.isPaused()) {
             try {
                 setRequestLineReadTimeout();
-
-                /**
-                 * 下面的if的判断语句当中，进行了一个HTTP的header的报文的解析
-                 */
                 if (!getInputBuffer().parseRequestLine(keptAlive)) {
                     if (handleIncompleteRequestLineRead()) {
                         break;
                     }
                 }
-
                 if (endpoint.isPaused()) {
-                    // 503 - Service unavailable
                     response.setStatus(503);
                     setErrorState(ErrorState.CLOSE_CLEAN, null);
                 } else {
                     keptAlive = true;
-                    // Set this every time in case limit has been changed via JMX
                     request.getMimeHeaders().setLimit(endpoint.getMaxHeaderCount());
-                    // Currently only NIO will ever return false here
                     if (!getInputBuffer().parseHeaders()) {
-                        // We've read part of the request, don't recycle it
-                        // instead associate it with the socket
                         openSocket = true;
                         readComplete = false;
                         break;
@@ -739,7 +615,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
             }
 
             if (!getErrorState().isError()) {
-                // Setting up filters, and parse some request headers
                 rp.setStage(org.apache.coyote.Constants.STAGE_PREPARE);
                 try {
                     prepareRequest();
@@ -754,17 +629,10 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                     socketWrapper.decrementKeepAlive() <= 0) {
                 keepAlive = false;
             }
-
-            // Process the request in the adapter
             if (!getErrorState().isError()) {
                 try {
                     rp.setStage(org.apache.coyote.Constants.STAGE_SERVICE);
                     getAdapter().service(request, response);
-                    // Handle when the response was committed before a serious
-                    // error occurred.  Throwing a ServletException should both
-                    // set the status to 500 and set the errorException.
-                    // If we fail here, then the response is likely already
-                    // committed, so we can't try and set headers.
                     if (keepAlive && !getErrorState().isError() && (
                             response.getErrorException() != null ||
                                     (!isAsync() && statusDropsConnection(response.getStatus())))) {
@@ -779,33 +647,19 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                     handlerHeaderException(t);
                 }
             }
-
-            // Finish the handling of the request
             rp.setStage(org.apache.coyote.Constants.STAGE_ENDINPUT);
-
             if (!isAsync() && !comet) {
                 if (getErrorState().isError()) {
-                    // If we know we are closing the connection, don't drain
-                    // input. This way uploading a 100GB file doesn't tie up the
-                    // thread if the servlet has rejected it.
                     getInputBuffer().setSwallowInput(false);
                 } else {
-                    // Need to check this again here in case the response was
-                    // committed before the error that requires the connection
-                    // to be closed occurred.
                     checkExpectationAndResponseStatus();
                 }
                 endRequest();
             }
-
             rp.setStage(org.apache.coyote.Constants.STAGE_ENDOUTPUT);
-
-            // If there was an error, make sure the request is counted as
-            // and error, and update the statistics counter
             if (getErrorState().isError()) {
                 response.setStatus(500);
             }
-
             if (!isAsync() && !comet || getErrorState().isError()) {
                 request.updateCounters();
                 if (getErrorState().isIoAllowed()) {
@@ -828,9 +682,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                 break;
             }
         }
-
         rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
-
         return ruleSocketStatus();
     }
 
@@ -876,8 +728,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
     private void handlerHeaderException(Throwable t) {
         ExceptionUtils.handleThrowable(t);
-        getLog().error(sm.getString(
-                "http11processor.request.process"), t);
+        getLog().error(sm.getString("http11processor.request.process"), t);
         // 500 - Internal Server Error
         response.setStatus(500);
         setErrorState(ErrorState.CLOSE_CLEAN, t);
@@ -885,15 +736,13 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
     }
 
     private void handlerHeaderTooLargeException(HeadersTooLargeException e) {
-        // The response should not have been committed but check it
-        // anyway to be safe
         if (response.isCommitted()) {
             setErrorState(ErrorState.CLOSE_NOW, e);
         } else {
             response.reset();
             response.setStatus(500);
             setErrorState(ErrorState.CLOSE_CLEAN, e);
-            response.setHeader("Connection", "close"); // TODO: Remove
+            response.setHeader("Connection", "close");
         }
     }
 
@@ -902,7 +751,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         if (getLog().isDebugEnabled()) {
             getLog().debug(sm.getString("http11processor.request.prepare"), t);
         }
-        // 500 - Internal Server Error
         response.setStatus(500);
         setErrorState(ErrorState.CLOSE_CLEAN, t);
         getAdapter().log(request, response, 0);
@@ -912,13 +760,10 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         ExceptionUtils.handleThrowable(t);
         UserDataHelper.Mode logMode = userDataHelper.getNextMode();
         if (logMode != null) {
-            String message = sm.getString(
-                    "http11processor.header.parse");
+            String message = sm.getString("http11processor.header.parse");
             switch (logMode) {
                 case INFO_THEN_DEBUG:
-                    message += sm.getString(
-                            "http11processor.fallToDebug");
-                    //$FALL-THROUGH$
+                    message += sm.getString("http11processor.fallToDebug");
                 case INFO:
                     getLog().info(message, t);
                     break;
@@ -926,7 +771,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
                     getLog().debug(message, t);
             }
         }
-        // 400 - Bad Request
         response.setStatus(400);
         setErrorState(ErrorState.CLOSE_CLEAN, t);
         getAdapter().log(request, response, 0);
@@ -935,24 +779,12 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
 
     private void checkExpectationAndResponseStatus() {
         if (expectation && (response.getStatus() < 200 || response.getStatus() > 299)) {
-            // Client sent Expect: 100-continue but received a
-            // non-2xx final response. Disable keep-alive (if enabled)
-            // to ensure that the connection is closed. Some clients may
-            // still send the body, some may send the next request.
-            // No way to differentiate, so close the connection to
-            // force the client to send the next request.
             getInputBuffer().setSwallowInput(false);
             keepAlive = false;
         }
     }
 
-
-    /**
-     * After reading the request headers, we have to setup the request filters.
-     * 从头到尾，就是一个头部信息的深入解析过程.
-     */
     protected void prepareRequest() {
-
         http11 = true;
         http09 = false;
         contentDelimitation = false;
@@ -983,8 +815,7 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
             response.setStatus(505);
             setErrorState(ErrorState.CLOSE_CLEAN, null);
             if (getLog().isDebugEnabled()) {
-                getLog().debug(sm.getString("http11processor.request.prepare") +
-                        " Unsupported HTTP version \"" + protocolMB + "\"");
+                getLog().debug(sm.getString("http11processor.request.prepare") + " Unsupported HTTP version \"" + protocolMB + "\"");
             }
         }
 
@@ -1092,11 +923,6 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         long contentLength = request.getContentLengthLong();
         if (contentLength >= 0) {
             if (contentDelimitation) {
-                // contentDelimitation being true at this point indicates that
-                // chunked encoding is being used but chunked encoding should
-                // not be used with a content length. RFC 2616, section 4.4,
-                // bullet 3 states Content-Length must be ignored in this case -
-                // so remove it.
                 headers.removeHeader("content-length");
                 request.setContentLength(-1);
             } else {

@@ -324,7 +324,7 @@ public class InternalAprOutputBuffer extends AbstractOutputBuffer<Long> {
 
     @Override
     protected void registerWriteInterest() {
-        wrapper.registerforEvent(-1, false, true);
+        wrapper.registerForEvent(-1, false, true);
     }
 
 

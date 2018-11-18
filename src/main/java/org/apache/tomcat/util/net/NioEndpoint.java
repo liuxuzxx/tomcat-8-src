@@ -16,6 +16,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Locale;
@@ -46,27 +47,15 @@ import org.lx.tomcat.util.SystemUtil;
 
 import com.alibaba.fastjson.JSONObject;
 
-/**
- * NIO tailored thread pool, providing the following services:
- * Socket acceptor thread
- * Socket poller thread
- * Worker threads pool
- * When switching to Java 5, there's an opportunity to use the virtual machine's thread pool.
- * 本来还是用JVM自带的虚拟机好，总是版本的适应和兼容让代码和逻辑变得很臃肿
- * 这个Nio，我是略微的了解一下就是这个：channel<----->buffer的一个交流，其实就是io的一个使用，但是
- * 二者的不同点就是Nio是不堵塞的，但是io是堵塞的
- * 好像是并没有使用什么Http11EndPoint这个实现类，就是使用了这个类，但是也没有给出来什么提示
- * 如果按照我们的想法应该是Http11EndPoint：但是为什么不使用啊，这个是一个问题
- */
 public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private static final Log log = LogFactory.getLog(NioEndpoint.class);
     public static final int OP_REGISTER = 0x100;
+    private static final String oomParachuteMsg = "SEVERE:内存不够用, parachute is non existent, 系统启动失败.";
     private NioSelectorPool selectorPool = new NioSelectorPool();
     private ServerSocketChannel serverSock = null;
     private boolean useSendfile = true;
     private int oomParachute = 1024 * 1024;
     private byte[] oomParachuteData = null;
-    private static final String oomParachuteMsg = "SEVERE:内存不够用, parachute is non existent, 系统启动失败.";
     private long lastParachuteCheck = System.currentTimeMillis();
     private volatile CountDownLatch stopLatch = null;
     private SynchronizedStack<SocketProcessor> processorCache;
@@ -77,7 +66,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private int pollerThreadCount = Math.min(2, Runtime.getRuntime().availableProcessors());
     private long selectorTimeout = 1000;
     private Poller[] pollers = null;
-    private AtomicInteger pollerRotater = new AtomicInteger(0);
+    private AtomicInteger pollerRotator = new AtomicInteger(0);
     private SSLContext sslContext = null;
     private String[] enabledCiphers;
     private String[] enabledProtocols;
@@ -131,7 +120,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     @Override
     public boolean getUsePolling() {
         return true;
-    } // Always supported
+    }
 
     public void setPollerThreadCount(int pollerThreadCount) {
         this.pollerThreadCount = pollerThreadCount;
@@ -149,8 +138,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return this.selectorTimeout;
     }
 
-    public Poller getPoller0() {
-        int idx = Math.abs(pollerRotater.incrementAndGet()) % pollers.length;
+    private Poller getPoller0() {
+        int idx = Math.abs(pollerRotator.incrementAndGet()) % pollers.length;
         return pollers[idx];
     }
 
@@ -240,23 +229,17 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         if (pollers == null) {
             return 0;
         } else {
-            int sum = 0;
-            for (int i = 0; i < pollers.length; i++) {
-                sum += pollers[i].getKeyCount();
-            }
-            return sum;
+            return Arrays.stream(pollers).mapToInt(Poller::getKeyCount).sum();
         }
     }
 
     @Override
     public void bind() throws Exception {
-        SystemUtil.logInfo(this, "开始初始化ServerSocketChannel对象，以及初始化对应的服务线程进行服务...");
         serverSock = ServerSocketChannel.open();
         socketProperties.setProperties(serverSock.socket());
         InetSocketAddress address = (getAddress() != null ? new InetSocketAddress(getAddress(), getPort()) : new InetSocketAddress(getPort()));
-        SystemUtil.logInfo("IP地址是：", address.getHostName(), " Port是：", address.getPort() + "");
         serverSock.socket().bind(address, getBacklog());
-        serverSock.configureBlocking(true); // mimic APR behavior
+        serverSock.configureBlocking(true);
         serverSock.socket().setSoTimeout(getSocketProperties().getSoTimeout());
 
         if (acceptorThreadCount == 0) {
@@ -278,14 +261,16 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             enabledProtocols = sslUtil.getEnableableProtocols(sslContext);
         }
 
-        if (oomParachute > 0)
+        if (oomParachute > 0) {
             reclaimParachute(true);
+        }
         selectorPool.open();
     }
 
     public KeyManager[] wrap(KeyManager[] managers) {
-        if (managers == null)
+        if (managers == null) {
             return null;
+        }
         KeyManager[] result = new KeyManager[managers.length];
         for (int i = 0; i < result.length; i++) {
             if (managers[i] instanceof X509KeyManager && getKeyAlias() != null) {
@@ -315,9 +300,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             }
 
             initializeConnectionLatch();
-
             startPollerThreads();
-
             startAcceptorThreads();
         }
     }
@@ -368,7 +351,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         if (running) {
             stop();
         }
-        // Close server socket
         serverSock.socket().close();
         serverSock.close();
         serverSock = null;
@@ -458,13 +440,19 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
     protected SSLEngine createSSLEngine() {
         SSLEngine engine = sslContext.createSSLEngine();
-        if ("false".equals(getClientAuth())) {
-            engine.setNeedClientAuth(false);
-            engine.setWantClientAuth(false);
-        } else if ("true".equals(getClientAuth()) || "yes".equals(getClientAuth())) {
-            engine.setNeedClientAuth(true);
-        } else if ("want".equals(getClientAuth())) {
-            engine.setWantClientAuth(true);
+        String clientAuth = getClientAuth();
+        switch (clientAuth){
+            case "false":
+                engine.setNeedClientAuth(false);
+                engine.setWantClientAuth(false);
+                break;
+            case "true":
+            case "yes":
+                engine.setNeedClientAuth(true);
+                break;
+            case "want":
+                engine.setWantClientAuth(true);
+                break;
         }
         engine.setUseClientMode(false);
         engine.setEnabledCipherSuites(enabledCiphers);
@@ -516,12 +504,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         return log;
     }
 
-    /**
-     * The background thread that listens for incoming TCP/IP connections and
-     * hands them off to an appropriate processor.
-     * 其实就是这个acceptor进行一个socket的监听和进行一个接待，好像是只有接待，好像是门前的服务员一样子
-     * 只会说一个：欢迎光临，里面请，但是具体的菜单吃饭是有这个具体的人员负责的，这个叫做社会分工明确，没有什么 拖泥带水的东西
-     */
     protected class Acceptor extends AbstractEndpoint.Acceptor {
 
         @Override
@@ -602,7 +584,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private void restAcceptor() {
-            SystemUtil.logInfo(this,"查看paused的值:",String.valueOf(paused));
+            SystemUtil.logInfo(this, "查看paused的值:", String.valueOf(paused));
             while (paused && running) {
                 state = AcceptorState.PAUSED;
                 try {
@@ -630,15 +612,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
-    /**
-     * PollerEvent, cacheable object for poller events to avoid GC
-     * 看PollerEvent，也就是这个循环事件的class，好像只是就是给Poller使用的，没看到其他地方使用这个类
-     * 其实从名字也能看出来，这个就是从属于Poller的Event
-     * 但是一个奇怪的事情就是，这个PollerEvent虽然是实现了Runnable的接口
-     * 但是并没有去开启一个线程，而是按部就班的调用run方法，不知道作者的意思是什么
-     * 我怀疑作者是打算做成一个线程运行，但是后面估计是不需要，也就给使用run直接调用了
-     * 看着很奇怪的感觉
-     */
     public static class PollerEvent implements Runnable {
 
         private NioChannel socket;
@@ -1257,8 +1230,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         public long getWriteTimeout() {
             return this.writeTimeout;
         }
-
-
     }
 
     public static class NioBufferHandler implements ApplicationBufferHandler {
@@ -1302,11 +1273,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         SSLImplementation getSslImplementation();
     }
 
-    /**
-     * Socket的处理就是在这个地方进行一个加工处理的过程
-     * 这作者是把所有的;Acceptor-->Poller--->PollerEvent-->SocketProcessor都给防止在NioEndpoint这个类当中了，
-     * 这样子也好，不用到处来回跳着看class了。
-     */
     protected class SocketProcessor implements Runnable {
 
         private KeyAttachment ka = null;
@@ -1341,7 +1307,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             try {
                 int handshake = -1;
                 handshake = identificationHandshake(socket, key, handshake);
-                log.info(MessageFormat.format("查看handshake的数值:{0}",handshake));
                 switch (handshake) {
                     case 0:
                         SocketState state;

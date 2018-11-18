@@ -218,6 +218,6 @@ public class SocketWrapper<E> {
         return super.toString() + ":" + String.valueOf(socket);
     }
 
-    public void registerforEvent(int timeout, boolean read, boolean write) {
+    public void registerForEvent(int timeout, boolean read, boolean write) {
     }
 }

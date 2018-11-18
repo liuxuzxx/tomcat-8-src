@@ -2544,7 +2544,7 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
         }
 
         @Override
-        public void registerforEvent(int timeout, boolean read, boolean write) {
+        public void registerForEvent(int timeout, boolean read, boolean write) {
             // Make sure an already closed socket is not added to the poller
             synchronized (closedLock) {
                 if (closed) {
