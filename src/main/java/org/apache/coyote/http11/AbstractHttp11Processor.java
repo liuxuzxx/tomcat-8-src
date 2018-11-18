@@ -171,16 +171,8 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return false;
     }
 
-
-    /**
-     * Set restricted user agent list (which will downgrade the connector
-     * to HTTP/1.0 mode). Regular expression as supported by {@link Pattern}.
-     * <p>
-     * ie: "gorilla|desesplorer|tigrus"
-     */
     public void setRestrictedUserAgents(String restrictedUserAgents) {
-        if (restrictedUserAgents == null ||
-                restrictedUserAgents.length() == 0) {
+        if (restrictedUserAgents == null || restrictedUserAgents.length() == 0) {
             this.restrictedUserAgents = null;
         } else {
             this.restrictedUserAgents = Pattern.compile(restrictedUserAgents);
@@ -188,101 +180,54 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
     }
 
 
-    /**
-     * Set the maximum number of Keep-Alive requests to honor.
-     * This is to safeguard from DoS attacks.  Setting to a negative
-     * value disables the check.
-     */
     public void setMaxKeepAliveRequests(int mkar) {
         maxKeepAliveRequests = mkar;
     }
 
-
-    /**
-     * Return the number of Keep-Alive requests that we will honor.
-     */
     public int getMaxKeepAliveRequests() {
         return maxKeepAliveRequests;
     }
 
-    /**
-     * Set the Keep-Alive timeout.
-     */
     public void setKeepAliveTimeout(int timeout) {
         keepAliveTimeout = timeout;
     }
 
-
-    /**
-     * Return the number Keep-Alive timeout.
-     */
     public int getKeepAliveTimeout() {
         return keepAliveTimeout;
     }
 
-
-    /**
-     * Set the maximum size of a POST which will be buffered in SSL mode.
-     */
     public void setMaxSavePostSize(int msps) {
         maxSavePostSize = msps;
     }
 
-
-    /**
-     * Return the maximum size of a POST which will be buffered in SSL mode.
-     */
     public int getMaxSavePostSize() {
         return maxSavePostSize;
     }
 
-
-    /**
-     * Set the flag to control upload time-outs.
-     */
     public void setDisableUploadTimeout(boolean isDisabled) {
         disableUploadTimeout = isDisabled;
     }
 
-    /**
-     * Get the flag that controls upload time-outs.
-     */
     public boolean getDisableUploadTimeout() {
         return disableUploadTimeout;
     }
 
-    /**
-     * Set the socket buffer flag.
-     */
     public void setSocketBuffer(int socketBuffer) {
         outputBuffer.setSocketBuffer(socketBuffer);
     }
 
-    /**
-     * Get the socket buffer flag.
-     */
     public int getSocketBuffer() {
         return outputBuffer.getSocketBuffer();
     }
 
-    /**
-     * Set the upload timeout.
-     */
     public void setConnectionUploadTimeout(int timeout) {
         connectionUploadTimeout = timeout;
     }
 
-    /**
-     * Get the upload timeout.
-     */
     public int getConnectionUploadTimeout() {
         return connectionUploadTimeout;
     }
 
-
-    /**
-     * Set the server header name.
-     */
     public void setServer(String server) {
         if (server == null || server.equals("")) {
             this.server = null;
@@ -291,34 +236,19 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         }
     }
 
-    /**
-     * Get the server header name.
-     */
     public String getServer() {
         return server;
     }
 
-
-    /**
-     * Check if the resource could be compressed, if the client supports it.
-     */
     private boolean isCompressable() {
-
-        // Check if content is not already gzipped
-        MessageBytes contentEncodingMB =
-                response.getMimeHeaders().getValue("Content-Encoding");
-
+        MessageBytes contentEncodingMB = response.getMimeHeaders().getValue("Content-Encoding");
         if ((contentEncodingMB != null)
                 && (contentEncodingMB.indexOf("gzip") != -1)) {
             return false;
         }
-
-        // If force mode, always compress (test purposes only)
         if (compressionLevel == 2) {
             return true;
         }
-
-        // Check if sufficient length to trigger the compression
         long contentLength = response.getContentLengthLong();
         if ((contentLength == -1)
                 || (contentLength > compressionMinSize)) {
@@ -332,28 +262,15 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return false;
     }
 
-
-    /**
-     * Check if compression should be used for this resource. Already checked
-     * that the resource could be compressed if the client supports it.
-     */
     private boolean useCompression() {
-
-        // Check if browser support gzip encoding
-        MessageBytes acceptEncodingMB =
-                request.getMimeHeaders().getValue("accept-encoding");
-
+        MessageBytes acceptEncodingMB = request.getMimeHeaders().getValue("accept-encoding");
         if ((acceptEncodingMB == null)
                 || (acceptEncodingMB.indexOf("gzip") == -1)) {
             return false;
         }
-
-        // If force mode, always compress (test purposes only)
         if (compressionLevel == 2) {
             return true;
         }
-
-        // Check for incompatible Browser
         if (noCompressionUserAgents != null) {
             MessageBytes userAgentValueMB =
                     request.getMimeHeaders().getValue("user-agent");
@@ -369,19 +286,12 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return true;
     }
 
-
-    /**
-     * Specialized utility method: find a sequence of lower case bytes inside
-     * a ByteChunk.
-     */
     protected int findBytes(ByteChunk bc, byte[] b) {
 
         byte first = b[0];
         byte[] buff = bc.getBuffer();
         int start = bc.getStart();
         int end = bc.getEnd();
-
-        // Look for first char
         int srcEnd = b.length;
 
         for (int i = start; i <= (end - srcEnd); i++) {
@@ -1589,19 +1499,8 @@ public abstract class AbstractHttp11Processor<S> extends AbstractProcessor<S> {
         return upgradeToken;
     }
 
-
-    /**
-     * Provides a mechanism for those connector implementations (currently only
-     * NIO) that need to reset timeouts from Async timeouts to standard HTTP
-     * timeouts once async processing completes.
-     */
     protected abstract void resetTimeouts();
 
-
-    /**
-     * Provides a mechanism for those connectors (currently only NIO) that need
-     * that need to set comet timeouts.
-     */
     protected abstract void setCometTimeouts(SocketWrapper<S> socketWrapper);
 
     public void endRequest() {

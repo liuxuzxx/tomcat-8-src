@@ -24,6 +24,7 @@ import javax.servlet.http.WebConnection;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -549,6 +550,7 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler, MBeanRegis
                 } while (state == SocketState.ASYNC_END || state == SocketState.UPGRADING
                         || dispatches != null && state != SocketState.CLOSED);
 
+                getLog().info(MessageFormat.format("查看状态信息:{0}",state));
                 switch (state) {
                     case LONG:
                         connections.put(socket, processor);
