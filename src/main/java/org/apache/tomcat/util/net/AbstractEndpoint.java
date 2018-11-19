@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,7 +95,9 @@ public abstract class AbstractEndpoint<S> {
         enum SocketState {
             OPEN, CLOSED, LONG, ASYNC_END, SENDFILE, UPGRADING, UPGRADED
         }
+
         Object getGlobal();
+
         void recycle();
     }
 
@@ -613,7 +616,7 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected void countUpOrAwaitConnection() throws InterruptedException {
-        SystemUtil.logInfo(this,"查看maxConnections的连接数：",String.valueOf(maxConnections));
+        SystemUtil.logInfo(this, "查看maxConnections的连接数：", String.valueOf(maxConnections));
         if (maxConnections == -1)
             return;
         LimitLatch latch = connectionLimitLatch;
@@ -622,17 +625,11 @@ public abstract class AbstractEndpoint<S> {
     }
 
     protected long countDownConnection() {
-        if (maxConnections == -1)
+        if (maxConnections == -1 || connectionLimitLatch == null) {
             return -1;
-        LimitLatch latch = connectionLimitLatch;
-        if (latch != null) {
-            long result = latch.countDown();
-            if (result < 0) {
-                getLog().warn("Incorrect connection count, multiple socket.close called on the same socket.");
-            }
-            return result;
-        } else
-            return -1;
+        }
+        return connectionLimitLatch.countDown();
+
     }
 
     protected int handleExceptionWithDelay(int currentErrorDelay) {
@@ -839,7 +836,7 @@ public abstract class AbstractEndpoint<S> {
         if (s == null) {
             this.sslEnabledProtocolsarr = new String[0];
         } else {
-            ArrayList<String> sslEnabledProtocols = new ArrayList<>();
+            List<String> sslEnabledProtocols = new ArrayList<>();
             StringTokenizer t = new StringTokenizer(s, ",");
             while (t.hasMoreTokens()) {
                 String p = t.nextToken().trim();
@@ -863,18 +860,9 @@ public abstract class AbstractEndpoint<S> {
                     || "yes".equalsIgnoreCase(useServerCipherSuitesOrderStr));
             try {
                 Method m = SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
-                m.invoke(sslParameters, Boolean.valueOf(useServerCipherSuitesOrder));
-            } catch (NoSuchMethodException nsme) {
-                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                        nsme);
-            } catch (InvocationTargetException ite) {
-                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                        ite);
-            } catch (IllegalArgumentException iae) {
-                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"),
-                        iae);
-            } catch (IllegalAccessException e) {
-                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"), e);
+                m.invoke(sslParameters, useServerCipherSuitesOrder);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalArgumentException | IllegalAccessException exception) {
+                throw new UnsupportedOperationException(sm.getString("endpoint.jsse.cannotHonorServerCipherOrder"), exception);
             }
             engine.setSSLParameters(sslParameters);
         }
@@ -929,6 +917,7 @@ public abstract class AbstractEndpoint<S> {
         public enum AcceptorState {
             NEW, RUNNING, PAUSED, ENDED
         }
+
         public final AcceptorState getState() {
             return state;
         }

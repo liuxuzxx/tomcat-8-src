@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.core;
 
 import javax.servlet.DispatcherType;
@@ -27,42 +11,19 @@ import org.apache.catalina.connector.Request;
 import org.apache.tomcat.util.ExceptionUtils;
 import org.apache.tomcat.util.descriptor.web.FilterMap;
 
-/**
- * Factory for the creation and caching of Filters and creation
- * of Filter Chains.
- *
- * @author Greg Murray
- * @author Remy Maucherat
- */
 public final class ApplicationFilterFactory {
 
     private ApplicationFilterFactory() {
-        // Prevent instance creation. This is a utility class.
     }
 
-
-    /**
-     * Construct and return a FilterChain implementation that will wrap the
-     * execution of the specified servlet instance.  If we should not execute
-     * a filter chain at all, return <code>null</code>.
-     *
-     * @param request The servlet request we are processing
-     * @param servlet The servlet instance to be wrapped
-
-     */
     @SuppressWarnings("deprecation")
-    public static ApplicationFilterChain createFilterChain
-        (ServletRequest request, Wrapper wrapper, Servlet servlet) {
-
-        // get the dispatcher type
+    public static ApplicationFilterChain createFilterChain(ServletRequest request, Wrapper wrapper, Servlet servlet) {
         DispatcherType dispatcher = null;
         if (request.getAttribute(Globals.DISPATCHER_TYPE_ATTR) != null) {
-            dispatcher = (DispatcherType) request.getAttribute(
-                    Globals.DISPATCHER_TYPE_ATTR);
+            dispatcher = (DispatcherType) request.getAttribute(Globals.DISPATCHER_TYPE_ATTR);
         }
         String requestPath = null;
-        Object attribute = request.getAttribute(
-                Globals.DISPATCHER_REQUEST_PATH_ATTR);
+        Object attribute = request.getAttribute(Globals.DISPATCHER_REQUEST_PATH_ATTR);
 
         if (attribute != null){
             requestPath = attribute.toString();

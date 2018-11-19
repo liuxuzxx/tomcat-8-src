@@ -31,8 +31,9 @@ public class NioChannel implements ByteChannel {
     }
 
     public int getBufferSize() {
-        if (bufHandler == null)
+        if (bufHandler == null) {
             return 0;
+        }
         int size = 0;
         size += bufHandler.getReadBuffer() != null ? bufHandler.getReadBuffer().capacity() : 0;
         size += bufHandler.getWriteBuffer() != null ? bufHandler.getWriteBuffer().capacity() : 0;
@@ -50,8 +51,9 @@ public class NioChannel implements ByteChannel {
     }
 
     public void close(boolean force) throws IOException {
-        if (isOpen() || force)
+        if (isOpen() || force) {
             close();
+        }
     }
 
     @Override
@@ -62,8 +64,7 @@ public class NioChannel implements ByteChannel {
     @Override
     public int write(ByteBuffer src) throws IOException {
         checkInterruptStatus();
-        SystemUtil.logInfo(this, "筚路蓝缕，千里追凶，终于找到第一案发现场，就是这句话，最原始的SocketChannel朝向",
-                "客户端写入数据信息，和我的认知一样...");
+        SystemUtil.logInfo(this, "筚路蓝缕，千里追凶，终于找到第一案发现场，就是这句话，最原始的SocketChannel朝向", "客户端写入数据信息，和我的认知一样...");
         return sc.write(src);
     }
 
@@ -76,8 +77,7 @@ public class NioChannel implements ByteChannel {
         Poller pol = getPoller();
         Selector sel = pol != null ? pol.getSelector() : null;
         SelectionKey key = sel != null ? getIOChannel().keyFor(sel) : null;
-        Object att = key != null ? key.attachment() : null;
-        return att;
+        return key != null ? key.attachment() : null;
     }
 
     public ApplicationBufferHandler getBufHandler() {
