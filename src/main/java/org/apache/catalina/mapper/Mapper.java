@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,30 +22,12 @@ import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.res.StringManager;
 import org.lx.tomcat.util.SystemUtil;
 
-/**
- * Mapper, which implements the servlet API mapping rules (which are derived
- * from the HTTP rules).
- *
- * @author Remy Maucherat
- * 部署的项目的映射关系类
- * 我总觉这个class的很多方法可以缩减大量的代码，因为都是些find和remove，add的方法，这就是List这些个collection的长处啊
- * 我想先从hosts下手改造，看着真的是太复杂了
- */
 public final class Mapper {
     private static final org.apache.juli.logging.Log log = org.apache.juli.logging.LogFactory.getLog(Mapper.class);
     private static final StringManager sm = StringManager.getManager(Mapper.class.getPackage().getName());
-
-    /**
-     * Array containing the virtual hosts definitions.
-     */
     private volatile MappedHost[] hosts = new MappedHost[0];
-
+    private volatile Map<String,MappedHost> hostMap = new HashMap<>();
     private String defaultHostName = null;
-
-    /**
-     * Mapping from Context object to Context version to support
-     * RequestDispatcher mappings.
-     */
     private Map<Context, ContextVersion> contextObjectToContextVersionMap = new ConcurrentHashMap<>();
 
     public void setDefaultHostName(String defaultHostName) {
@@ -53,10 +37,6 @@ public final class Mapper {
     /**
      * Add a new host to the mapper.
      * 我不明白的事情是：为什么给这个host排序，反正都是对象，就算乱了，那又怎么样，难道会影响查找的性能。。？
-     *
-     * @param name Virtual host name
-     * @param aliases Alias names for the virtual host
-     * @param host Host object
      */
     public synchronized void addHost(String name, String[] aliases, Host host) {
         MappedHost[] newHosts = new MappedHost[hosts.length + 1];
@@ -69,8 +49,6 @@ public final class Mapper {
         } else {
             MappedHost duplicate = hosts[find(hosts, name)];
             if (duplicate.object == host) {
-                // The host is already registered in the mapper.
-                // E.g. it might have been added by addContextVersion()
                 if (log.isDebugEnabled()) {
                     log.debug(sm.getString("mapper.addHost.sameHost", name));
                 }
@@ -82,6 +60,8 @@ public final class Mapper {
                 return;
             }
         }
+
+        hostMap.put(name,newHost);
         List<MappedHost> newAliases = new ArrayList<>(aliases.length);
         for (String alias : aliases) {
             MappedHost newAlias = new MappedHost(alias, newHost);
@@ -138,24 +118,18 @@ public final class Mapper {
         if (insertMap(hosts, newHosts, newAlias)) {
             hosts = newHosts;
             if (log.isDebugEnabled()) {
-                log.debug(sm.getString("mapper.addHostAlias.success",
-                        newAlias.name, newAlias.getRealHostName()));
+                log.debug(sm.getString("mapper.addHostAlias.success", newAlias.name, newAlias.getRealHostName()));
             }
             return true;
         } else {
             MappedHost duplicate = hosts[find(hosts, newAlias.name)];
             if (duplicate.getRealHost() == newAlias.getRealHost()) {
-                // A duplicate Alias for the same Host.
-                // A harmless redundancy. E.g.
-                // <Host name="localhost"><Alias>localhost</Alias></Host>
                 if (log.isDebugEnabled()) {
-                    log.debug(sm.getString("mapper.addHostAlias.sameHost",
-                            newAlias.name, newAlias.getRealHostName()));
+                    log.debug(sm.getString("mapper.addHostAlias.sameHost", newAlias.name, newAlias.getRealHostName()));
                 }
                 return false;
             }
-            log.error(sm.getString("mapper.duplicateHostAlias", newAlias.name,
-                    newAlias.getRealHostName(), duplicate.getRealHostName()));
+            log.error(sm.getString("mapper.duplicateHostAlias", newAlias.name, newAlias.getRealHostName(), duplicate.getRealHostName()));
             return false;
         }
     }
@@ -165,7 +139,6 @@ public final class Mapper {
      * @param alias The alias to remove
      */
     public synchronized void removeHostAlias(String alias) {
-        // Find and remove the alias
         MappedHost hostMapping = exactFind(hosts, alias);
         if (hostMapping == null || !hostMapping.isAlias()) {
             return;
@@ -624,9 +597,7 @@ public final class Mapper {
         }
         host.toChars();
         uri.toChars();
-        internalMap(host.getCharChunk(), uri.getCharChunk(), version,
-                mappingData);
-
+        internalMap(host.getCharChunk(), uri.getCharChunk(), version, mappingData);
     }
 
 
@@ -641,16 +612,12 @@ public final class Mapper {
      * @throws IOException if the buffers are too small to hold the results of
      *                     the mapping.
      */
-    public void map(Context context, MessageBytes uri,
-            MappingData mappingData) throws IOException {
-
-        ContextVersion contextVersion =
-                contextObjectToContextVersionMap.get(context);
+    public void map(Context context, MessageBytes uri, MappingData mappingData) throws IOException {
+        ContextVersion contextVersion = contextObjectToContextVersionMap.get(context);
         uri.toChars();
         CharChunk uricc = uri.getCharChunk();
         uricc.setLimit(-1);
         internalMapWrapper(contextVersion, uricc, mappingData);
-
     }
 
     /**
@@ -658,10 +625,6 @@ public final class Mapper {
      */
     private void internalMap(CharChunk host, CharChunk uri, String version, MappingData mappingData) throws IOException {
         if (mappingData.host != null) {
-            // The legacy code (dating down at least to Tomcat 4.1) just
-            // skipped all mapping work in this case. That behaviour has a risk
-            // of returning an inconsistent result.
-            // I do not see a valid use case for it.
             throw new AssertionError();
         }
 
@@ -1197,6 +1160,7 @@ public final class Mapper {
      * This will return the index for the closest inferior or equal item in the
      * given array.
      * @see #exactFind(MapElement[], String)
+     * 这个应该是个二分查找的算法，不明白，直接用HashMap,还会有这些个问题。。。，排序的目的可能就是为了去重，我猜测
      */
     private static <T> int find(MapElement<T>[] map, String name) {
 
@@ -1456,19 +1420,8 @@ public final class Mapper {
     }
 
     protected static final class MappedHost extends MapElement<Host> {
-
         private volatile ContextList contextList;
-
-        /**
-         * Link to the "real" MappedHost, shared by all aliases.
-         */
         private final MappedHost realHost;
-
-        /**
-         * Links to all registered aliases, for easy enumeration. This field
-         * is available only in the "real" MappedHost. In an alias this field
-         * is <code>null</code>.
-         */
         private final List<MappedHost> aliases;
 
         public MappedHost(String name, Host host) {
@@ -1533,8 +1486,7 @@ public final class Mapper {
                 int slashCount) {
             MappedContext[] newContexts = new MappedContext[contexts.length + 1];
             if (insertMap(contexts, newContexts, mappedContext)) {
-                return new ContextList(newContexts, Math.max(nesting,
-                        slashCount));
+                return new ContextList(newContexts, Math.max(nesting, slashCount));
             }
             return null;
         }

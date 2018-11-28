@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.connector;
 
 import java.io.IOException;
@@ -56,7 +40,6 @@ import org.apache.tomcat.util.net.SocketStatus;
 import org.apache.tomcat.util.res.StringManager;
 import org.lx.tomcat.util.SystemUtil;
 
-
 /**
  * Implementation of a request processor which delegates the processing to a
  * Coyote processor.
@@ -68,88 +51,39 @@ public class CoyoteAdapter implements Adapter {
 
     private static final Log log = LogFactory.getLog(CoyoteAdapter.class);
 
-    // -------------------------------------------------------------- Constants
-
     private static final String POWERED_BY = "Servlet/3.1 JSP/2.3 " +
             "(" + ServerInfo.getServerInfo() + " Java/" +
             System.getProperty("java.vm.vendor") + "/" +
             System.getProperty("java.runtime.version") + ")";
-
     private static final EnumSet<SessionTrackingMode> SSL_ONLY = EnumSet.of(SessionTrackingMode.SSL);
-
     public static final int ADAPTER_NOTES = 1;
-
-
-    protected static final boolean ALLOW_BACKSLASH =
-            Boolean.parseBoolean(System.getProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH", "false"));
-
-
-    private static final ThreadLocal<String> THREAD_NAME =
-            ThreadLocal.withInitial(() -> Thread.currentThread().getName());
-
-    // ----------------------------------------------------------- Constructors
-
-
-    /**
-     * Construct a new CoyoteProcessor associated with the specified connector.
-     *
-     * @param connector CoyoteConnector that owns this processor
-     */
-    public CoyoteAdapter(Connector connector) {
-
-        super();
-        this.connector = connector;
-
-    }
-
-
-    // ----------------------------------------------------- Instance Variables
-
-
-    /**
-     * The CoyoteConnector with which this processor is associated.
-     */
+    protected static final boolean ALLOW_BACKSLASH = Boolean.parseBoolean(System.getProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH", "false"));
+    private static final ThreadLocal<String> THREAD_NAME = ThreadLocal.withInitial(() -> Thread.currentThread().getName());
     private final Connector connector;
-
-
-    /**
-     * The string manager for this package.
-     */
     protected static final StringManager sm = StringManager.getManager(Constants.Package);
 
+    public CoyoteAdapter(Connector connector) {
+        super();
+        this.connector = connector;
+    }
 
-    // -------------------------------------------------------- Adapter Methods
-
-
-    /**
-     * Event method.
-     *
-     * @return false to indicate an error, expected or not
-     */
     @SuppressWarnings("deprecation")
     @Override
-    public boolean event(org.apache.coyote.Request req,
-                         org.apache.coyote.Response res, SocketStatus status) {
-
+    public boolean event(org.apache.coyote.Request req, org.apache.coyote.Response res, SocketStatus status) {
         Request request = (Request) req.getNote(ADAPTER_NOTES);
         Response response = (Response) res.getNote(ADAPTER_NOTES);
-
         if (request.getWrapper() == null) {
             return false;
         }
-
         boolean error = false;
         boolean read = false;
         try {
             if (status == SocketStatus.OPEN_READ) {
                 if (response.isClosed()) {
-                    // The event has been closed asynchronously, so call end instead of
-                    // read to cleanup the pipeline
                     request.getEvent().setEventType(CometEvent.EventType.END);
                     request.getEvent().setEventSubType(null);
                 } else {
                     try {
-                        // Fill the read buffer of the servlet layer
                         if (request.read()) {
                             read = true;
                         }
@@ -180,8 +114,6 @@ public class CoyoteAdapter implements Adapter {
                 request.getEvent().setEventSubType(CometEvent.EventSubType.SERVER_SHUTDOWN);
             } else if (status == SocketStatus.TIMEOUT) {
                 if (response.isClosed()) {
-                    // The event has been closed asynchronously, so call end instead of
-                    // read to cleanup the pipeline
                     request.getEvent().setEventType(CometEvent.EventType.END);
                     request.getEvent().setEventSubType(null);
                 } else {
@@ -258,8 +190,7 @@ public class CoyoteAdapter implements Adapter {
         Response response = (Response) res.getNote(ADAPTER_NOTES);
 
         if (request == null) {
-            throw new IllegalStateException(
-                    "Dispatch may only happen on an existing request.");
+            throw new IllegalStateException("Dispatch may only happen on an existing request.");
         }
         boolean comet = false;
         boolean success = true;

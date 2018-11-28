@@ -1,5 +1,12 @@
 package org.apache.catalina.core;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.management.ObjectName;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Engine;
@@ -18,14 +25,6 @@ import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.res.StringManager;
 import org.lx.tomcat.util.SystemUtil;
 
-import javax.management.ObjectName;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-
 /**
  * Standard implementation of the <code>Service</code> interface.  The
  * associated Container is generally an instance of Engine, but this is
@@ -37,8 +36,6 @@ import java.util.stream.Collectors;
 /**
  * 这个是tomcat的serve.xml的文件定义的额server顶层元素下面的第一个元素，记住是service不是server
  * 这个单词是名词的东西，不是东西，顶层的单词才是这个动词的意思，注意啊
- *
- * @author liuxu
  */
 public class StandardService extends LifecycleMBeanBase implements Service {
 
@@ -86,7 +83,7 @@ public class StandardService extends LifecycleMBeanBase implements Service {
 
     @Override
     public void setContainer(Container container) {
-        setContainer((Engine)container);
+        setContainer((Engine) container);
     }
 
     @Override
@@ -276,21 +273,14 @@ public class StandardService extends LifecycleMBeanBase implements Service {
         }
     }
 
-    /**
-     * Retrieves executor by name, null if not found
-     *
-     * @param executorName String
-     * @return Executor
-     */
     @Override
     public Executor getExecutor(String executorName) {
         synchronized (executors) {
-            for (Executor executor : executors) {
-                if (executorName.equals(executor.getName()))
-                    return executor;
-            }
+            return executors.stream()
+                    .filter(executor -> executorName.equals(executor.getName()))
+                    .findFirst()
+                    .orElse(null);
         }
-        return null;
     }
 
     /**
