@@ -24,7 +24,6 @@ import org.lx.tomcat.util.SystemUtil;
 public final class Mapper {
     private static final org.apache.juli.logging.Log log = org.apache.juli.logging.LogFactory.getLog(Mapper.class);
     private static final StringManager sm = StringManager.getManager(Mapper.class.getPackage().getName());
-    //private volatile MappedHost[] hosts = new MappedHost[0];
     private volatile Map<String, MappedHost> hostMap = new HashMap<>();
     private String defaultHostName = null;
     private Map<Context, ContextVersion> contextObjectToContextVersionMap = new ConcurrentHashMap<>();
@@ -1339,6 +1338,7 @@ public final class Mapper {
 
         public final MappedContext[] contexts;
         public final int nesting;
+        private final Map<String,MappedContext> contextMap = new HashMap<>();
 
         public ContextList() {
             this(new MappedContext[0], 0);
@@ -1347,6 +1347,7 @@ public final class Mapper {
         private ContextList(MappedContext[] contexts, int nesting) {
             this.contexts = contexts;
             this.nesting = nesting;
+            Arrays.stream(contexts).forEach(mappedContext -> contextMap.put(mappedContext.getName(),mappedContext));
         }
 
         public ContextList addContext(MappedContext mappedContext,
@@ -1368,6 +1369,18 @@ public final class Mapper {
                 return new ContextList(newContexts, newNesting);
             }
             return null;
+        }
+
+        public MappedContext[] getContexts() {
+            return contexts;
+        }
+
+        public int getNesting() {
+            return nesting;
+        }
+
+        public Map<String, MappedContext> getContextMap() {
+            return contextMap;
         }
     }
 
