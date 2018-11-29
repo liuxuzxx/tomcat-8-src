@@ -1,11 +1,9 @@
 package org.apache.catalina.mapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,10 +33,6 @@ public final class Mapper {
         this.defaultHostName = defaultHostName;
     }
 
-    /**
-     * Add a new host to the mapper.
-     * 我不明白的事情是：为什么给这个host排序，反正都是对象，就算乱了，那又怎么样，难道会影响查找的性能。。？
-     */
     public synchronized void addHost(String name, String[] aliases, Host host) {
         MappedHost newHost = new MappedHost(name, host);
         hostMap.put(name, newHost);
@@ -61,7 +55,7 @@ public final class Mapper {
             return;
         }
         hostMap = hostMap.entrySet()
-                .stream().filter(entry->entry.getValue().getRealHost()!=host)
+                .stream().filter(entry -> entry.getValue().getRealHost() != host)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -72,61 +66,27 @@ public final class Mapper {
      * @param alias The alias to add
      */
     public synchronized void addHostAlias(String name, String alias) {
-        MappedHost realHost = exactFind(hosts, name);
+        MappedHost realHost = hostMap.get(name);
         if (realHost == null) {
-            // Should not be adding an alias for a host that doesn't exist but
-            // just in case...
             return;
         }
         MappedHost newAlias = new MappedHost(alias, realHost);
-        if (addHostAliasImpl(newAlias)) {
+        if (newAlias == hostMap.putIfAbsent(newAlias.getName(), newAlias)) {
             realHost.addAlias(newAlias);
         }
     }
 
-    private synchronized boolean addHostAliasImpl(MappedHost newAlias) {
-        MappedHost[] newHosts = new MappedHost[hosts.length + 1];
-        if (insertMap(hosts, newHosts, newAlias)) {
-            hosts = newHosts;
-            if (log.isDebugEnabled()) {
-                log.debug(sm.getString("mapper.addHostAlias.success", newAlias.name, newAlias.getRealHostName()));
-            }
-            return true;
-        } else {
-            MappedHost duplicate = hosts[find(hosts, newAlias.name)];
-            if (duplicate.getRealHost() == newAlias.getRealHost()) {
-                if (log.isDebugEnabled()) {
-                    log.debug(sm.getString("mapper.addHostAlias.sameHost", newAlias.name, newAlias.getRealHostName()));
-                }
-                return false;
-            }
-            log.error(sm.getString("mapper.duplicateHostAlias", newAlias.name, newAlias.getRealHostName(), duplicate.getRealHostName()));
-            return false;
-        }
-    }
-
-    /**
-     * Remove a host alias
-     *
-     * @param alias The alias to remove
-     */
     public synchronized void removeHostAlias(String alias) {
-        MappedHost hostMapping = exactFind(hosts, alias);
+        MappedHost hostMapping = hostMap.get(alias);
         if (hostMapping == null || !hostMapping.isAlias()) {
             return;
         }
-        MappedHost[] newHosts = new MappedHost[hosts.length - 1];
-        if (removeMap(hosts, newHosts, alias)) {
-            hosts = newHosts;
+        if (hostMap.remove(hostMapping.getName(), hostMapping)) {
             hostMapping.getRealHost().removeAlias(hostMapping);
         }
 
     }
 
-    /**
-     * Replace {@link MappedHost#contextList} field in <code>realHost</code> and
-     * all its aliases with a new value.
-     */
     private void updateContextList(MappedHost realHost, ContextList newContextList) {
         realHost.contextList = newContextList;
         for (MappedHost alias : realHost.getAliases()) {
@@ -134,18 +94,6 @@ public final class Mapper {
         }
     }
 
-    /**
-     * Add a new Context to an existing Host.
-     *
-     * @param hostName         Virtual host name this context belongs to
-     * @param host             Host object
-     * @param path             Context path
-     * @param version          Context version
-     * @param context          Context object
-     * @param welcomeResources Welcome files defined for this context
-     * @param resources        Static resources of the context
-     * @deprecated Use {@link #addContextVersion(String, Host, String, String, Context, String[], WebResourceRoot, Collection)}
-     */
     @Deprecated
     public void addContextVersion(String hostName, Host host, String path,
                                   String version, Context context, String[] welcomeResources,
@@ -153,26 +101,14 @@ public final class Mapper {
         addContextVersion(hostName, host, path, version, context, welcomeResources, resources, null);
     }
 
-    /**
-     * Add a new Context to an existing Host.
-     *
-     * @param hostName         Virtual host name this context belongs to
-     * @param host             Host object
-     * @param path             Context path
-     * @param version          Context version
-     * @param context          Context object
-     * @param welcomeResources Welcome files defined for this context
-     * @param resources        Static resources of the context
-     * @param wrappers         Information on wrapper mappings
-     */
     public void addContextVersion(String hostName, Host host, String path,
                                   String version, Context context, String[] welcomeResources,
                                   WebResourceRoot resources, Collection<WrapperMappingInfo> wrappers) {
 
-        MappedHost mappedHost = exactFind(hosts, hostName);
+        MappedHost mappedHost = hostMap.get(hostName);
         if (mappedHost == null) {
             addHost(hostName, new String[0], host);
-            mappedHost = exactFind(hosts, hostName);
+            mappedHost = hostMap.get(hostName);
             if (mappedHost == null) {
                 log.error("No host found: " + hostName);
                 return;
@@ -232,7 +168,7 @@ public final class Mapper {
      */
     public void removeContextVersion(Context ctxt, String hostName, String path, String version) {
         contextObjectToContextVersionMap.remove(ctxt);
-        MappedHost host = exactFind(hosts, hostName);
+        MappedHost host = hostMap.get(hostName);
         if (host == null || host.isAlias()) {
             return;
         }
@@ -280,7 +216,7 @@ public final class Mapper {
 
 
     private ContextVersion findContextVersion(String hostName, String contextPath, String version, boolean silent) {
-        MappedHost host = exactFind(hosts, hostName);
+        MappedHost host = hostMap.get(hostName);
         if (host == null || host.isAlias()) {
             if (!silent) {
                 log.error("No host found: " + hostName);
@@ -572,18 +508,6 @@ public final class Mapper {
         internalMap(host.getCharChunk(), uri.getCharChunk(), version, mappingData);
     }
 
-
-    /**
-     * Map the specified URI relative to the context,
-     * mutating the given mapping data.
-     *
-     * @param context     The actual context
-     * @param uri         URI
-     * @param mappingData This structure will contain the result of the mapping
-     *                    operation
-     * @throws IOException if the buffers are too small to hold the results of
-     *                     the mapping.
-     */
     public void map(Context context, MessageBytes uri, MappingData mappingData) throws IOException {
         ContextVersion contextVersion = contextObjectToContextVersionMap.get(context);
         uri.toChars();
@@ -592,9 +516,6 @@ public final class Mapper {
         internalMapWrapper(contextVersion, uricc, mappingData);
     }
 
-    /**
-     * Map the specified URI.
-     */
     private void internalMap(CharChunk host, CharChunk uri, String version, MappingData mappingData) throws IOException {
         if (mappingData.host != null) {
             throw new AssertionError();
@@ -603,13 +524,16 @@ public final class Mapper {
         uri.setLimit(-1);
 
         // Virtual host mapping
-        MappedHost[] hosts = this.hosts;
-        MappedHost mappedHost = exactFindIgnoreCase(hosts, host);
+        MappedHost mappedHost = hostMap.entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(host.toString()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
         if (mappedHost == null) {
             if (defaultHostName == null) {
                 return;
             }
-            mappedHost = exactFind(hosts, defaultHostName);
+            mappedHost = hostMap.get(defaultHostName);
             if (mappedHost == null) {
                 return;
             }
@@ -899,8 +823,7 @@ public final class Mapper {
     /**
      * Exact mapping.
      */
-    private final void internalMapExactWrapper
-    (MappedWrapper[] wrappers, CharChunk path, MappingData mappingData) {
+    private final void internalMapExactWrapper(MappedWrapper[] wrappers, CharChunk path, MappingData mappingData) {
         MappedWrapper wrapper = exactFind(wrappers, path);
         if (wrapper != null) {
             mappingData.requestPath.setString(wrapper.name);
@@ -921,9 +844,7 @@ public final class Mapper {
     /**
      * Wildcard mapping.
      */
-    private final void internalMapWildcardWrapper
-    (MappedWrapper[] wrappers, int nesting, CharChunk path,
-     MappingData mappingData) {
+    private final void internalMapWildcardWrapper(MappedWrapper[] wrappers, int nesting, CharChunk path, MappingData mappingData) {
 
         int pathEnd = path.getEnd();
 
@@ -977,8 +898,7 @@ public final class Mapper {
      * @param mappingData      Mapping data for result
      * @param resourceExpected Is this mapping expecting to find a resource
      */
-    private final void internalMapExtensionWrapper(MappedWrapper[] wrappers,
-                                                   CharChunk path, MappingData mappingData, boolean resourceExpected) {
+    private final void internalMapExtensionWrapper(MappedWrapper[] wrappers, CharChunk path, MappingData mappingData, boolean resourceExpected) {
         char[] buf = path.getBuffer();
         int pathEnd = path.getEnd();
         int servletPath = path.getOffset();
@@ -1213,30 +1133,6 @@ public final class Mapper {
         return null;
     }
 
-    /**
-     * Find a map element given its name in a sorted array of map elements. This
-     * will return the element that you were searching for. Otherwise it will
-     * return <code>null</code>.
-     *
-     * @see #findIgnoreCase(MapElement[], CharChunk)
-     */
-    private static final <T, E extends MapElement<T>> E exactFindIgnoreCase(
-            E[] map, CharChunk name) {
-        int pos = findIgnoreCase(map, name);
-        if (pos >= 0) {
-            E result = map[pos];
-            if (name.equalsIgnoreCase(result.name)) {
-                return result;
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * Compare given char chunk with String.
-     * Return -1, 0 or +1 if inferior, equal, or superior to the String.
-     */
     private static final int compare(CharChunk name, int start, int end,
                                      String compareTo) {
         int result = 0;
@@ -1262,11 +1158,6 @@ public final class Mapper {
         return result;
     }
 
-
-    /**
-     * Compare given char chunk with String ignoring case.
-     * Return -1, 0 or +1 if inferior, equal, or superior to the String.
-     */
     private static final int compareIgnoreCase(CharChunk name, int start, int end,
                                                String compareTo) {
         int result = 0;
@@ -1381,11 +1272,7 @@ public final class Mapper {
         return false;
     }
 
-    /**
-     * 就是一个Key是String ,Value是T范型的东西而已
-     */
     protected abstract static class MapElement<T> {
-
         public final String name;
         public final T object;
 
