@@ -25,7 +25,7 @@ public final class ApplicationFilterFactory {
         String requestPath = null;
         Object attribute = request.getAttribute(Globals.DISPATCHER_REQUEST_PATH_ATTR);
 
-        if (attribute != null){
+        if (attribute != null) {
             requestPath = attribute.toString();
         }
 
@@ -60,7 +60,7 @@ public final class ApplicationFilterFactory {
 
         filterChain.setServlet(servlet);
 
-        filterChain.setSupport(((StandardWrapper)wrapper).getInstanceSupport());
+        filterChain.setSupport(((StandardWrapper) wrapper).getInstanceSupport());
 
         // Acquire the filter mappings for this Context
         StandardContext context = (StandardContext) wrapper.getParent();
@@ -75,15 +75,14 @@ public final class ApplicationFilterFactory {
 
         // Add the relevant path-mapped filters to this filter chain
         for (int i = 0; i < filterMaps.length; i++) {
-            if (!matchDispatcher(filterMaps[i] ,dispatcher)) {
+            if (!matchDispatcher(filterMaps[i], dispatcher)) {
                 continue;
             }
-            if (!matchFiltersURL(filterMaps[i], requestPath))
+            if (!matchFiltersURL(filterMaps[i], requestPath)) {
                 continue;
-            ApplicationFilterConfig filterConfig = (ApplicationFilterConfig)
-                context.findFilterConfig(filterMaps[i].getFilterName());
+            }
+            ApplicationFilterConfig filterConfig = (ApplicationFilterConfig) context.findFilterConfig(filterMaps[i].getFilterName());
             if (filterConfig == null) {
-                // FIXME - log configuration problem
                 continue;
             }
             boolean isCometFilter = false;
@@ -107,15 +106,13 @@ public final class ApplicationFilterFactory {
 
         // Add filters that match on servlet name second
         for (int i = 0; i < filterMaps.length; i++) {
-            if (!matchDispatcher(filterMaps[i] ,dispatcher)) {
+            if (!matchDispatcher(filterMaps[i], dispatcher)) {
                 continue;
             }
             if (!matchFiltersServlet(filterMaps[i], servletName))
                 continue;
-            ApplicationFilterConfig filterConfig = (ApplicationFilterConfig)
-                context.findFilterConfig(filterMaps[i].getFilterName());
+            ApplicationFilterConfig filterConfig = (ApplicationFilterConfig) context.findFilterConfig(filterMaps[i].getFilterName());
             if (filterConfig == null) {
-                // FIXME - log configuration problem
                 continue;
             }
             boolean isCometFilter = false;
@@ -123,7 +120,7 @@ public final class ApplicationFilterFactory {
                 try {
                     isCometFilter = filterConfig.getFilter() instanceof CometFilter;
                 } catch (Exception e) {
-                   //ignore
+                    //ignore
                 }
                 if (isCometFilter) {
                     filterChain.addFilter(filterConfig);
@@ -140,7 +137,7 @@ public final class ApplicationFilterFactory {
      * matches the requirements of the specified filter mapping;
      * otherwise, return <code>false</code>.
      *
-     * @param filterMap Filter mapping being checked
+     * @param filterMap   Filter mapping being checked
      * @param requestPath Context-relative request path of this request
      */
     private static boolean matchFiltersURL(FilterMap filterMap, String requestPath) {
@@ -173,7 +170,7 @@ public final class ApplicationFilterFactory {
      * matches the requirements of the specified filter mapping;
      * otherwise, return <code>false</code>.
      *
-     * @param testPath URL mapping being checked
+     * @param testPath    URL mapping being checked
      * @param requestPath Context-relative request path of this request
      */
     private static boolean matchFiltersURL(String testPath, String requestPath) {
@@ -190,7 +187,7 @@ public final class ApplicationFilterFactory {
             return (true);
         if (testPath.endsWith("/*")) {
             if (testPath.regionMatches(0, requestPath, 0,
-                                       testPath.length() - 2)) {
+                    testPath.length() - 2)) {
                 if (requestPath.length() == (testPath.length() - 2)) {
                     return (true);
                 } else if ('/' == requestPath.charAt(testPath.length() - 2)) {
@@ -205,11 +202,11 @@ public final class ApplicationFilterFactory {
             int slash = requestPath.lastIndexOf('/');
             int period = requestPath.lastIndexOf('.');
             if ((slash >= 0) && (period > slash)
-                && (period != requestPath.length() - 1)
-                && ((requestPath.length() - period)
+                    && (period != requestPath.length() - 1)
+                    && ((requestPath.length() - period)
                     == (testPath.length() - 1))) {
                 return (testPath.regionMatches(2, requestPath, period + 1,
-                                               testPath.length() - 2));
+                        testPath.length() - 2));
             }
         }
 
@@ -223,14 +220,13 @@ public final class ApplicationFilterFactory {
      * the requirements of the specified filter mapping; otherwise
      * return <code>false</code>.
      *
-     * @param filterMap Filter mapping being checked
+     * @param filterMap   Filter mapping being checked
      * @param servletName Servlet name being checked
      */
     private static boolean matchFiltersServlet(FilterMap filterMap, String servletName) {
         if (servletName == null) {
             return (false);
-        }
-        else if (filterMap.getMatchAllServletNames()) {
+        } else if (filterMap.getMatchAllServletNames()) {
             return (true);
         } else {
             String[] servletNames = filterMap.getServletNames();
@@ -251,27 +247,27 @@ public final class ApplicationFilterFactory {
      */
     private static boolean matchDispatcher(FilterMap filterMap, DispatcherType type) {
         switch (type) {
-            case FORWARD :
+            case FORWARD:
                 if ((filterMap.getDispatcherMapping() & FilterMap.FORWARD) > 0) {
-                        return true;
+                    return true;
                 }
                 break;
-            case INCLUDE :
+            case INCLUDE:
                 if ((filterMap.getDispatcherMapping() & FilterMap.INCLUDE) > 0) {
                     return true;
                 }
                 break;
-            case REQUEST :
+            case REQUEST:
                 if ((filterMap.getDispatcherMapping() & FilterMap.REQUEST) > 0) {
                     return true;
                 }
                 break;
-            case ERROR :
+            case ERROR:
                 if ((filterMap.getDispatcherMapping() & FilterMap.ERROR) > 0) {
                     return true;
                 }
                 break;
-            case ASYNC :
+            case ASYNC:
                 if ((filterMap.getDispatcherMapping() & FilterMap.ASYNC) > 0) {
                     return true;
                 }
