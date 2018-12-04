@@ -8,4 +8,14 @@
     <description>
         看看项目的加载是不是顺序性的
     </description>
+
+    <servlet>
+        <servlet-name>dispatcherServlet</servlet-name>
+        <servlet-class>org.lx.tomcat.servlet.RondoDispatcherServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>dispatcherServlet</servlet-name>
+        <url-pattern>/dispatcher</url-pattern>
+    </servlet-mapping>
 </web-app>

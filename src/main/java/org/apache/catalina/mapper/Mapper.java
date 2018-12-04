@@ -42,7 +42,6 @@ public final class Mapper {
         newHost.addAliases(newAliasesHost);
     }
 
-
     /**
      * Remove a host from the mapper.
      *
@@ -589,7 +588,6 @@ public final class Mapper {
 
     }
 
-
     /**
      * Wrapper mapping.
      * 看代码的意思就是：匹配客户端的url，映射到我们后台服务的资源上面
@@ -766,10 +764,6 @@ public final class Mapper {
         path.setEnd(pathEnd);
     }
 
-
-    /**
-     * Exact mapping.
-     */
     private final void internalMapExactWrapper(MappedWrapper[] wrappers, CharChunk path, MappingData mappingData) {
         MappedWrapper wrapper = exactFind(wrappers, path);
         if (wrapper != null) {
@@ -786,7 +780,6 @@ public final class Mapper {
             }
         }
     }
-
 
     /**
      * Wildcard mapping.
@@ -935,61 +928,6 @@ public final class Mapper {
      * Find a map element given its name in a sorted array of map elements.
      * This will return the index for the closest inferior or equal item in the
      * given array.
-     */
-    private static final <T> int findIgnoreCase(MapElement<T>[] map, CharChunk name) {
-        return findIgnoreCase(map, name, name.getStart(), name.getEnd());
-    }
-
-
-    /**
-     * Find a map element given its name in a sorted array of map elements.
-     * This will return the index for the closest inferior or equal item in the
-     * given array.
-     */
-    private static final <T> int findIgnoreCase(MapElement<T>[] map, CharChunk name, int start, int end) {
-
-        int a = 0;
-        int b = map.length - 1;
-
-        // Special cases: -1 and 0
-        if (b == -1) {
-            return -1;
-        }
-        if (compareIgnoreCase(name, start, end, map[0].name) < 0) {
-            return -1;
-        }
-        if (b == 0) {
-            return 0;
-        }
-
-        int i = 0;
-        while (true) {
-            i = (b + a) / 2;
-            int result = compareIgnoreCase(name, start, end, map[i].name);
-            if (result == 1) {
-                a = i;
-            } else if (result == 0) {
-                return i;
-            } else {
-                b = i;
-            }
-            if ((b - a) == 1) {
-                int result2 = compareIgnoreCase(name, start, end, map[b].name);
-                if (result2 < 0) {
-                    return a;
-                } else {
-                    return b;
-                }
-            }
-        }
-
-    }
-
-
-    /**
-     * Find a map element given its name in a sorted array of map elements.
-     * This will return the index for the closest inferior or equal item in the
-     * given array.
      *
      * @see #exactFind(MapElement[], String)
      * 这个应该是个二分查找的算法，不明白，直接用HashMap,还会有这些个问题。。。，排序的目的可能就是为了去重，我猜测
@@ -1033,7 +971,6 @@ public final class Mapper {
         }
 
     }
-
 
     /**
      * Find a map element given its name in a sorted array of map elements. This
@@ -1093,31 +1030,6 @@ public final class Mapper {
         return result;
     }
 
-    private static final int compareIgnoreCase(CharChunk name, int start, int end, String compareTo) {
-        int result = 0;
-        char[] c = name.getBuffer();
-        int len = compareTo.length();
-        if ((end - start) < len) {
-            len = end - start;
-        }
-        for (int i = 0; (i < len) && (result == 0); i++) {
-            if (Ascii.toLower(c[i + start]) > Ascii.toLower(compareTo.charAt(i))) {
-                result = 1;
-            } else if (Ascii.toLower(c[i + start]) < Ascii.toLower(compareTo.charAt(i))) {
-                result = -1;
-            }
-        }
-        if (result == 0) {
-            if (compareTo.length() > (end - start)) {
-                result = -1;
-            } else if (compareTo.length() < (end - start)) {
-                result = 1;
-            }
-        }
-        return result;
-    }
-
-
     /**
      * Find the position of the last slash in the given char chunk.
      */
@@ -1135,7 +1047,6 @@ public final class Mapper {
         }
         return pos;
     }
-
 
     /**
      * Find the position of the nth slash, in the given char chunk.
@@ -1359,8 +1270,7 @@ public final class Mapper {
         public final boolean jspWildCard;
         public final boolean resourceOnly;
 
-        public MappedWrapper(String name, Wrapper wrapper, boolean jspWildCard,
-                             boolean resourceOnly) {
+        public MappedWrapper(String name, Wrapper wrapper, boolean jspWildCard, boolean resourceOnly) {
             super(name, wrapper);
             this.jspWildCard = jspWildCard;
             this.resourceOnly = resourceOnly;
