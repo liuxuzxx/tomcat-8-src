@@ -1,21 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
 package org.apache.catalina.core;
 
 
@@ -54,7 +36,6 @@ import org.apache.tomcat.util.res.StringManager;
  */
 @SuppressWarnings("deprecation")
 final class ApplicationFilterChain implements FilterChain, CometFilterChain {
-
     // Used to enforce requirements of SRV.8.2 / SRV.14.2.5.1
     private static final ThreadLocal<ServletRequest> lastServicedRequest;
     private static final ThreadLocal<ServletResponse> lastServicedResponse;
@@ -69,34 +50,13 @@ final class ApplicationFilterChain implements FilterChain, CometFilterChain {
         }
     }
 
-    // -------------------------------------------------------------- Constants
-
-
     public static final int INCREMENT = 10;
 
-
-    // ----------------------------------------------------------- Constructors
-
-
-    /**
-     * Construct a new chain instance with no defined filters.
-     */
     public ApplicationFilterChain() {
-
         super();
-
     }
 
-
-    // ----------------------------------------------------- Instance Variables
-
-
-    /**
-     * Filters.
-     */
-    private ApplicationFilterConfig[] filters =
-        new ApplicationFilterConfig[0];
-
+    private ApplicationFilterConfig[] filters = new ApplicationFilterConfig[0];
 
     /**
      * The int which is used to maintain the current position
@@ -120,8 +80,7 @@ final class ApplicationFilterChain implements FilterChain, CometFilterChain {
     /**
      * The string manager for our package.
      */
-    private static final StringManager sm =
-      StringManager.getManager(Constants.Package);
+    private static final StringManager sm = StringManager.getManager(Constants.Package);
 
 
     /**

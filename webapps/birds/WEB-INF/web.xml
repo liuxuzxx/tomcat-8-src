@@ -9,6 +9,24 @@
         看看项目的加载是不是顺序性的
     </description>
 
+    <filter>
+        <filter-name>tollFilter</filter-name>
+        <filter-class>org.lx.tomcat.filter.TollFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>tollFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>resourceFilter</filter-name>
+        <filter-class>org.lx.tomcat.filter.ResourceFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>resourceFilter</filter-name>
+        <url-pattern>/resource/*</url-pattern>
+    </filter-mapping>
+
     <servlet>
         <servlet-name>dispatcherServlet</servlet-name>
         <servlet-class>org.lx.tomcat.servlet.RondoDispatcherServlet</servlet-class>

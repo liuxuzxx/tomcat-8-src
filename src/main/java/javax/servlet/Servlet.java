@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package javax.servlet;
 
 import java.io.IOException;
@@ -85,7 +68,7 @@ public interface Servlet {
      * @see UnavailableException
      * @see #getServletConfig
      */
-    public void init(ServletConfig config) throws ServletException;
+    void init(ServletConfig config) throws ServletException;
 
     /**
      *
@@ -104,7 +87,7 @@ public interface Servlet {
      *
      * @see #init
      */
-    public ServletConfig getServletConfig();
+    ServletConfig getServletConfig();
 
     /**
      * Called by the servlet container to allow the servlet to respond to a
@@ -145,8 +128,7 @@ public interface Servlet {
      * @exception IOException
      *                if an input or output exception occurs
      */
-    public void service(ServletRequest req, ServletResponse res)
-            throws ServletException, IOException;
+    void service(ServletRequest req, ServletResponse res) throws ServletException, IOException;
 
     /**
      * Returns information about the servlet, such as author, version, and
@@ -158,7 +140,7 @@ public interface Servlet {
      *
      * @return a <code>String</code> containing servlet information
      */
-    public String getServletInfo();
+    String getServletInfo();
 
     /**
      * Called by the servlet container to indicate to a servlet that the servlet
@@ -174,5 +156,5 @@ public interface Servlet {
      * sure that any persistent state is synchronized with the servlet's current
      * state in memory.
      */
-    public void destroy();
+    void destroy();
 }

@@ -60,8 +60,7 @@ public final class ApplicationFilterFactory {
 
         filterChain.setServlet(servlet);
 
-        filterChain.setSupport
-            (((StandardWrapper)wrapper).getInstanceSupport());
+        filterChain.setSupport(((StandardWrapper)wrapper).getInstanceSupport());
 
         // Acquire the filter mappings for this Context
         StandardContext context = (StandardContext) wrapper.getParent();
@@ -124,9 +123,7 @@ public final class ApplicationFilterFactory {
                 try {
                     isCometFilter = filterConfig.getFilter() instanceof CometFilter;
                 } catch (Exception e) {
-                    // Note: The try catch is there because getFilter has a lot of
-                    // declared exceptions. However, the filter is allocated much
-                    // earlier
+                   //ignore
                 }
                 if (isCometFilter) {
                     filterChain.addFilter(filterConfig);
@@ -135,15 +132,8 @@ public final class ApplicationFilterFactory {
                 filterChain.addFilter(filterConfig);
             }
         }
-
-        // Return the completed filter chain
-        return (filterChain);
-
+        return filterChain;
     }
-
-
-    // -------------------------------------------------------- Private Methods
-
 
     /**
      * Return <code>true</code> if the context-relative request path
@@ -224,8 +214,7 @@ public final class ApplicationFilterFactory {
         }
 
         // Case 4 - "Default" Match
-        return (false); // NOTE - Not relevant for selecting filters
-
+        return false; // NOTE - Not relevant for selecting filters
     }
 
 
@@ -237,13 +226,10 @@ public final class ApplicationFilterFactory {
      * @param filterMap Filter mapping being checked
      * @param servletName Servlet name being checked
      */
-    private static boolean matchFiltersServlet(FilterMap filterMap,
-                                        String servletName) {
-
+    private static boolean matchFiltersServlet(FilterMap filterMap, String servletName) {
         if (servletName == null) {
             return (false);
         }
-        // Check the specific "*" special servlet name
         else if (filterMap.getMatchAllServletNames()) {
             return (true);
         } else {

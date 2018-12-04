@@ -7,7 +7,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.lx.tomcat.util.SystemUtil;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
 
 /**
  * @author 刘旭
@@ -15,11 +16,16 @@ import org.lx.tomcat.util.SystemUtil;
  * @Date 2018-11-19 11:43:58
  */
 public class RondoDispatcherServlet extends HttpServlet {
+    private static final Log log = LogFactory.getLog(RondoDispatcherServlet.class);
+
+    public RondoDispatcherServlet(){
+        log.info("RondoDispatcherServlet 被初始化了......");
+    }
 
     @Override
     public void init() throws ServletException {
         super.init();
-        SystemUtil.logInfo("RondoDispatcherServlet init......");
+        log.info("RondoDispatcherServlet init......");
     }
 
     @Override

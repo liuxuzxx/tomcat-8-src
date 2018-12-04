@@ -217,7 +217,7 @@ final class StandardWrapperValve extends ValveBase {
     @Override
     public void event(Request request, Response response, CometEvent event) throws IOException, ServletException {
         Throwable throwable = null;
-        long t1 = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         StandardWrapper wrapper = (StandardWrapper) getContainer();
         if (wrapper == null) {
             return;
@@ -344,17 +344,15 @@ final class StandardWrapperValve extends ValveBase {
             }
         }
 
-        long t2 = System.currentTimeMillis();
+        long end = System.currentTimeMillis();
 
-        long time = t2 - t1;
+        long time = end - start;
         processingTime += time;
         if (time > maxTime) maxTime = time;
         if (time < minTime) minTime = time;
-
     }
 
-    private void exception(Request request, Response response,
-                           Throwable exception) {
+    private void exception(Request request, Response response, Throwable exception) {
         request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, exception);
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         response.setError();
