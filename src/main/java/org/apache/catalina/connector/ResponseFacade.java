@@ -398,8 +398,7 @@ public class ResponseFacade
     public boolean containsHeader(String name) {
 
         if (response == null) {
-            throw new IllegalStateException(
-                            sm.getString("responseFacade.nullResponse"));
+            throw new IllegalStateException(sm.getString("responseFacade.nullResponse"));
         }
 
         return response.containsHeader(name);
@@ -408,12 +407,9 @@ public class ResponseFacade
 
     @Override
     public String encodeURL(String url) {
-
         if (response == null) {
-            throw new IllegalStateException(
-                            sm.getString("responseFacade.nullResponse"));
+            throw new IllegalStateException(sm.getString("responseFacade.nullResponse"));
         }
-
         return response.encodeURL(url);
     }
 

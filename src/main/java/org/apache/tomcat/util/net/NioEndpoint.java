@@ -506,7 +506,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
         @Override
         public void run() {
-            SystemUtil.printInfo(this, "Acceptor线程启动了，可以接受客户端的请求了");
             int errorDelay = 0;
             while (running) {
                 restAcceptor();
@@ -1080,8 +1079,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                             } else if (!ka.isAsync() || ka.getTimeout() > 0) {
                                 long delta = now - ka.getLastAccess();
                                 long timeout = (ka.getTimeout() == -1) ? ((long) socketProperties.getSoTimeout()) : (ka.getTimeout());
-                                boolean isTimedout = delta > timeout;
-                                if (isTimedout) {
+                                boolean isTimeOut = delta > timeout;
+                                if (isTimeOut) {
                                     ka.access(Long.MAX_VALUE);
                                     processSocket(ka, SocketStatus.TIMEOUT, true);
                                 }

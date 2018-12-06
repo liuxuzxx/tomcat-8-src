@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.catalina.ha.context;
 
 import java.util.Collections;
@@ -44,7 +28,7 @@ import org.apache.tomcat.util.res.StringManager;
 public class ReplicatedContext extends StandardContext implements MapOwner {
     private int mapSendOptions = Channel.SEND_OPTIONS_DEFAULT;
     private static final Log log = LogFactory.getLog( ReplicatedContext.class );
-    protected static final long DEFAULT_REPL_TIMEOUT = 15000;//15 seconds
+    protected static final long DEFAULT_REPL_TIMEOUT = 15000;
     private static final StringManager sm = StringManager.getManager(ReplicatedContext.class.getPackage().getName());
 
     /**
@@ -56,14 +40,11 @@ public class ReplicatedContext extends StandardContext implements MapOwner {
      */
     @Override
     protected synchronized void startInternal() throws LifecycleException {
-
         try {
             CatalinaCluster catclust = (CatalinaCluster)this.getCluster();
             if (this.context == null) this.context = new ReplApplContext(this);
             if ( catclust != null ) {
-                ReplicatedMap<String,Object> map = new ReplicatedMap<>(
-                        this, catclust.getChannel(),DEFAULT_REPL_TIMEOUT,
-                        getName(),getClassLoaders());
+                ReplicatedMap<String,Object> map = new ReplicatedMap<>(this, catclust.getChannel(),DEFAULT_REPL_TIMEOUT, getName(),getClassLoaders());
                 map.setChannelSendOptions(mapSendOptions);
                 ((ReplApplContext)this.context).setAttributeMap(map);
                 if (getAltDDName() != null) context.setAttribute(Globals.ALT_DD_ATTR, getAltDDName());
@@ -84,16 +65,11 @@ public class ReplicatedContext extends StandardContext implements MapOwner {
      */
     @Override
     protected synchronized void stopInternal() throws LifecycleException {
-
-        Map<String, Object> map = ((ReplApplContext) this.context)
-                .getAttributeMap();
-
+        Map<String, Object> map = ((ReplApplContext) this.context).getAttributeMap();
         super.stopInternal();
-
         if ( map!=null && map instanceof ReplicatedMap) {
             ((ReplicatedMap<?, ?>) map).breakdown();
         }
-
     }
 
 
@@ -132,8 +108,7 @@ public class ReplicatedContext extends StandardContext implements MapOwner {
 
 
     protected static class ReplApplContext extends ApplicationContext {
-        protected final ConcurrentHashMap<String, Object> tomcatAttributes =
-            new ConcurrentHashMap<>();
+        protected final ConcurrentHashMap<String, Object> tomcatAttributes = new ConcurrentHashMap<>();
 
         public ReplApplContext(ReplicatedContext context) {
             super(context);
