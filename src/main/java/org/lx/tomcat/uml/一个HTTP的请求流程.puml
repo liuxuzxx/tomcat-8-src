@@ -1,0 +1,7 @@
+@startuml
+title HTTP的请求解析流程
+(*)-->"NioEndpoint的Acceptor\n负责accept请求，\n但是不做任何的read和write操作"
+"NioEndpoint的Acceptor\n负责accept请求，\n但是不做任何的read和write操作"-->"扔个Poller来处理具体的SocketChannel"
+"扔个Poller来处理具体的SocketChannel"-->"最终封装成一个PollerEvent事件\n放到一个同步队列当中去"
+"最终封装成一个PollerEvent事件\n放到一个同步队列当中去"-->"Poller会在run方法当中处理这个同步队列的事件"
+@enduml
