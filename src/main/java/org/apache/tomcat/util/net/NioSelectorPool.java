@@ -28,8 +28,7 @@ public class NioSelectorPool {
 
     private static final Log log = LogFactory.getLog(NioSelectorPool.class);
 
-    protected static final boolean SHARED =
-        Boolean.parseBoolean(System.getProperty("org.apache.tomcat.util.net.NioSelectorShared", "true"));
+    protected static final boolean SHARED = Boolean.parseBoolean(System.getProperty("org.apache.tomcat.util.net.NioSelectorShared", "true"));
 
     protected NioBlockingSelector blockingSelector;
 

@@ -15,7 +15,6 @@ import org.apache.catalina.Host;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.Wrapper;
-import org.apache.tomcat.util.buf.Ascii;
 import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.res.StringManager;

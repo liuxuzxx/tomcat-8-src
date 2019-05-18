@@ -4,4 +4,11 @@ title HTTP的请求解析流程
 "NioEndpoint的Acceptor\n负责accept请求，\n但是不做任何的read和write操作"-->"扔个Poller来处理具体的SocketChannel"
 "扔个Poller来处理具体的SocketChannel"-->"最终封装成一个PollerEvent事件\n放到一个同步队列当中去"
 "最终封装成一个PollerEvent事件\n放到一个同步队列当中去"-->"Poller会在run方法当中处理这个同步队列的事件"
+"Poller会在run方法当中处理这个同步队列的事件" -->"调用haveEvents方法，\n调用PollerEvent的run方法，\nregister我们的SocketChannel到Selector上去"
+"调用haveEvents方法，\n调用PollerEvent的run方法，\nregister我们的SocketChannel到Selector上去"-->"connectorSelection方法来处理准备好的SocketChannel"
+"connectorSelection方法来处理准备好的SocketChannel" -->"processKey来处理准备好的通道"
+"processKey来处理准备好的通道"-->"processSocket开始处理具体的事务\n这个是个线程，扔给了线程池(Tomcat自己写的线程池)"
+"processSocket开始处理具体的事务\n这个是个线程，扔给了线程池(Tomcat自己写的线程池)"-->"AbstractConnectionHandler的process真正处理"
+"AbstractConnectionHandler的process真正处理"-->"AbstractHttp11Processor的process处理了请求"
+-->(*)
 @enduml

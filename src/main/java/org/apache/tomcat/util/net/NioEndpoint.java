@@ -15,7 +15,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -44,8 +43,6 @@ import org.apache.tomcat.util.net.AbstractEndpoint.Handler.SocketState;
 import org.apache.tomcat.util.net.SecureNioChannel.ApplicationBufferHandler;
 import org.apache.tomcat.util.net.jsse.NioX509KeyManager;
 import org.lx.tomcat.util.SystemUtil;
-
-import com.alibaba.fastjson.JSONObject;
 
 public class NioEndpoint extends AbstractEndpoint<NioChannel> {
     private static final Log log = LogFactory.getLog(NioEndpoint.class);
@@ -517,6 +514,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
                     countUpOrAwaitConnection();
                     SocketChannel socket;
                     try {
+                        SystemUtil.logInfo(this,serverSock.getLocalAddress().toString(),String.valueOf(System.currentTimeMillis()));
                         socket = serverSock.accept();
                     } catch (IOException ioe) {
                         errorDelay = cleanAccept(errorDelay);
@@ -565,6 +563,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
 
         private void loadingSocketChannel(SocketChannel socketChannel) {
+            SystemUtil.logInfo(this,"开始封装SocketChannel为NioChannel对象");
             if (running && !paused) {
                 if (!setSocketOptions(socketChannel)) {
                     cleanSocketChannel(socketChannel);
@@ -602,6 +601,9 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
         }
     }
 
+    /**
+     * 这个类就是一个事件类，然后是register到Selector上面去
+     */
     public static class PollerEvent implements Runnable {
         private NioChannel socket;
         private int interestOps;
@@ -744,8 +746,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             ka.interestOps(SelectionKey.OP_READ);
             if (r == null) {
                 r = new PollerEvent(socket, ka, OP_REGISTER);
-            }
-            else {
+            } else {
                 r.reset(socket, ka, OP_REGISTER);
             }
             addEvent(r);
@@ -815,7 +816,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
             while (true) {
                 try {
                     restPoller();
-                    boolean hasEvents = false;
+                    boolean hasEvents;
                     if (close) {
                         closeClean();
                         break;
