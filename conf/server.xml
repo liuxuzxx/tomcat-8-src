@@ -11,6 +11,7 @@
     <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener"/>
     <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener"/>
     <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener"/>
+    <Listener className="org.lx.tomcat.listener.ServerStatusListener"/>
 
     <GlobalNamingResources>
         <Resource name="UserDatabase" auth="Container"
@@ -26,7 +27,6 @@
             <Realm className="org.apache.catalina.realm.LockOutRealm">
                 <Realm className="org.apache.catalina.realm.UserDatabaseRealm" resourceName="UserDatabase"/>
             </Realm>
-
             <Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="true">
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                        prefix="localhost_access_log" suffix=".txt"
